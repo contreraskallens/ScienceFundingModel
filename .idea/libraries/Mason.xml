@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Mason">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Mason/bsh-2.0b4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/jmf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/itext-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/jfreechart-1.0.17.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/portfolio.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/jcommon-1.0.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Mason/mason.19.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
