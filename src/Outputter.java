@@ -1,16 +1,18 @@
-import sim.engine.SimState;
-
 import java.io.*;
 
 
 public class Outputter {
 
-    // fields //
+    /**
+     * Field to save the file name to be recorded. useful for batch runs.
+     */
+    private String fileName;
 
-    private String fileName; // field to save the file name to be recorded. useful for batch runs.
-
-    // constructor //
-
+    /**
+     *
+     * @param state hey
+     * @throws IOException hey
+     */
     public Outputter(ScienceFunding state) throws IOException {
 
         // every time Outputter is constructed, it outputs the data contained in Globals to the file recorded in fileName.
@@ -49,7 +51,7 @@ public class Outputter {
 
     private void writeGlobals(BufferedWriter pw, ScienceFunding state) throws IOException {
         // writes all of the data saved to Globals, and then writes a new line.
-        Globals theGlobals = state.getTheGlobals(); // point to globals to get the measures
+        Globals theGlobals = state.getGlobalsObject(); // point to globals to get the measures
 
         pw.write(state.schedule.getSteps() + "," + theGlobals.getFalseDiscoveryRate() + "," + theGlobals.getRateOfDiscovery() + "," +
                 theGlobals.getDiscoveredMean() + "," + theGlobals.getDiscoveredStandardDev() +

@@ -13,11 +13,12 @@ class ScienceMaster implements Steppable {
 
     // methods //
 
+    @Override
     public void step(SimState state){
         ScienceFunding simulation = (ScienceFunding) state; // cast state as ScienceFunding to access objects and parameters
-        Globals theGlobals = simulation.getTheGlobals(); // access Globals to reset numbers each turn
+        Globals theGlobals = simulation.getGlobalsObject(); // access Globals to reset numbers each turn
 
-        // each step, the ScienceMaster updates the highest clout for labs in the previous cycle, determines the lab that will die, and creates a new lab.
+        // each step, the ScienceMaster updates the highest prestige for labs in the previous cycle, determines the lab that will die, and creates a new lab.
 
         theGlobals.resetGlobals(); // reset Globals each turn to catch measures only for this time step. ScienceMaster does it so it's the first thing that happens.
         updateHighest(simulation);
@@ -30,8 +31,8 @@ class ScienceMaster implements Steppable {
         // if there's more than one oldest lab, it picks one at random from them. it determines the oldest lab by sorting the set of chosen labs by age.
         // the chosen lab is removed from the schedule and the landscapes.
 
-        Bag allLabs = state.getAllLabs();
-        SparseGrid2D spaceLabs = state.getLabs();
+        Bag allLabs = state.getBagOfAllLabs();
+        SparseGrid2D spaceLabs = state.getLocationOfLaboratories();
 
         Bag chosenLabs = new Bag(); // bag to store the labs that are chosen to participate in the drawing
         for(int i = 0; i < 10; i++){// chose 10 random labs
@@ -57,8 +58,8 @@ class ScienceMaster implements Steppable {
         // there's a possibility (controlled by parameter ScienceFunding.probabilityOfMutationEffort) that the inherited effort will mutate an amount drawn from a gaussian with mean 0 and standard dev 1. effort is capped at 1 and 100.
         // the new lab inherits the reproduced lab topic with a slight variation, controlled by parameter ScienceFunding.topicMutation.
 
-        Bag allLabs = state.getAllLabs();
-        SparseGrid2D spaceLabs = state.getLabs();
+        Bag allLabs = state.getBagOfAllLabs();
+        SparseGrid2D spaceLabs = state.getLocationOfLaboratories();
 
         // allocate the list of labs for the drawing.
 
@@ -81,36 +82,36 @@ class ScienceMaster implements Steppable {
 
             // create the lab
             state.increaseLatestId(); // update the global id assignment, and get the id for the new lab.
-            Lab newLab = new Lab(state.getLatestId(), reproducedLab.topicX, reproducedLab.topicY, false); // create a new lab with the same topic as the chosen lab, and a new ID.
+            Lab newLab = new Lab(state.getLatestIdAssigned(), reproducedLab.xLocationInLandscape, reproducedLab.yLocationInLandscape); // create a new lab with the same topic as the chosen lab, and a new ID.
 
             // topic mutation //
 
-            int xVariation = state.random.nextInt(state.getTopicMutation() + 1); // generate a random number between 0 and parameter topicMutation to determine how far from the parent topic the new lab will be located.
-            int yVariation = state.random.nextInt(state.getTopicMutation() + 1);
+            int xVariation = state.random.nextInt(state.getMaximumTopicMutationDistance() + 1); // generate a random number between 0 and parameter topicMutation to determine how far from the parent topic the new lab will be located.
+            int yVariation = state.random.nextInt(state.getMaximumTopicMutationDistance() + 1);
             if (state.random.nextBoolean()) { // randomly choose the direction of the distance.
                 xVariation *= -1;
             }
             if (state.random.nextBoolean()) {
                 yVariation *= -1;
             }
-            newLab.topicX += xVariation;
-            newLab.topicY += yVariation;
-            if (newLab.topicX >= state.getSizeOfLandscape()) {
-                newLab.topicX = state.getSizeOfLandscape() - 1;
+            newLab.xLocationInLandscape += xVariation;
+            newLab.yLocationInLandscape += yVariation;
+            if (newLab.xLocationInLandscape >= state.getSizeOfLandscape()) {
+                newLab.xLocationInLandscape = state.getSizeOfLandscape() - 1;
             } // cap the new lab's topic mutation between 0 and 199.
-            if(newLab.topicX < 0){newLab.topicX = 0;}
-            if (newLab.topicY >= state.getSizeOfLandscape()) {
-                newLab.topicY = state.getSizeOfLandscape() - 1;
+            if(newLab.xLocationInLandscape < 0){newLab.xLocationInLandscape = 0;}
+            if (newLab.yLocationInLandscape >= state.getSizeOfLandscape()) {
+                newLab.yLocationInLandscape = state.getSizeOfLandscape() - 1;
             }
-            if(newLab.topicY <0){newLab.topicY = 0;}
+            if(newLab.yLocationInLandscape <0){newLab.yLocationInLandscape = 0;}
 
             // effort mutation //
 
             newLab.effort = reproducedLab.effort; // copy parent lab's level of effort.
 
-            if (state.random.nextDouble() < state.getProbabilityOfMutationEffort()) { // with probability controlled by parameter ScienceFunding.probabilityOfMutationEffort, determine if the inherited level of effort will change.
+            if (state.random.nextDouble() < state.getProbabilityOfEffortMutation()) { // with probability controlled by parameter ScienceFunding.probabilityOfMutationEffort, determine if the inherited level of effort will change.
                 double effortMutation = state.random.nextGaussian(); // determine how much it will change by drawing from a gaussian distribution with mean 0 and standard dev 1.
-                effortMutation *= state.getStandardDevOfMutation();
+                effortMutation *= state.getStandardDeviationOfEffortMutation();
                 reproducedLab.effort += effortMutation;
                 if (reproducedLab.effort > 100) {
                     reproducedLab.effort = 100;
@@ -123,19 +124,19 @@ class ScienceMaster implements Steppable {
             allLabs.remove(dyingLab); // remove old lab from list of all labs
             allLabs.add(newLab); // add new lab to list of all labs
             newLab.stoppable = state.schedule.scheduleRepeating(newLab,0, 1); // add new lab to schedule and allocate stoppable to kill in the future
-            spaceLabs.setObjectLocation(newLab, newLab.topicX, newLab.topicY); // add new lab to epistemic landscape
+            spaceLabs.setObjectLocation(newLab, newLab.xLocationInLandscape, newLab.yLocationInLandscape); // add new lab to epistemic landscape
         }
     }
 
     private void updateHighest(ScienceFunding state){
-        // method to get the highest clout achieved by a lab on the previous cycle.
-        // this is used for the labs this turn to calculate their clout relative to the record of the previous turn.
+        // method to get the highest prestige achieved by a lab on the previous cycle.
+        // this is used for the labs this turn to calculate their prestige relative to the record of the previous turn.
         // the record is stored as a static field in ScienceMaster.
 
         double highestYet = 0;
-        for(int i = 0; i < state.getAllLabs().size(); i++){
-            Lab aLab = (Lab) state.getAllLabs().get(i);
-            double record = aLab.clout;
+        for(int i = 0; i < state.getBagOfAllLabs().size(); i++){
+            Lab aLab = (Lab) state.getBagOfAllLabs().get(i);
+            double record = aLab.prestige;
             if(record > highestYet){
                 highestYet = record;
             }

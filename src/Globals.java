@@ -76,6 +76,7 @@ class Globals implements Steppable {
         this.postdocDurationGinis = new DoubleBag();
     }
 
+    @Override
     public void step(SimState state) {
         // each turn that it is scheduled (interval controlled by ScienceFunding.frequencyOfGlobals), the globals agent updates a
         // series of measures of the state of the simulation. these are stored in the object's static fields, and accessed by the UI console
@@ -99,7 +100,7 @@ class Globals implements Steppable {
 
         // landscape discovery mean and standard deviation //
 
-        double[] landscapeArray = state.getLandscape().toArray(); // all base rates from the landscape.
+        double[] landscapeArray = state.getEpistemicLandscape().toArray(); // all base rates from the landscape.
         discoveredDistribution = landscapeArray; // the distribution of each base rate in array form.
         discoveredMean = calculateMean(landscapeArray); // the mean base rate of the landscape.
         discoveredStandardDev = calculateStandardDev(landscapeArray, discoveredMean); // standard deviation of the base rates of the landscape.
@@ -108,7 +109,7 @@ class Globals implements Steppable {
 
         // topic publication rate //
 
-        int[] pubsArray = state.getPublications().toArray();
+        int[] pubsArray = state.getPublicationRecordOfTopics().toArray();
         publicationDistribution = pubsArray; // all publications of every topic, in array form.
         int exploredTopics = 0; // number of topics with more than 0 publications
         for (int aPubsArray1 : pubsArray) { // loop through all topics and add 1 to exploredTopics if it has at least 1 publication.
@@ -125,12 +126,12 @@ class Globals implements Steppable {
 
         // funds and postdoc metrics //
 
-        double[] fundsArray = new double[state.getAllLabs().size()]; // allocate arrays for total funds, total number of postdocs, and years that lab will have at least 1 postdoc.
-        double[] postdocNumberArray = new double[state.getAllLabs().size()];
-        double[] postdocDurationArray = new double[state.getAllLabs().size()];
+        double[] fundsArray = new double[state.getBagOfAllLabs().size()]; // allocate arrays for total funds, total number of postdocs, and years that lab will have at least 1 postdoc.
+        double[] postdocNumberArray = new double[state.getBagOfAllLabs().size()];
+        double[] postdocDurationArray = new double[state.getBagOfAllLabs().size()];
 
-        for (int i = 0; i < state.getAllLabs().size(); i++) { // populate the arrays by looping through the labs.
-            Lab aLab = (Lab) state.getAllLabs().get(i);
+        for (int i = 0; i < state.getBagOfAllLabs().size(); i++) { // populate the arrays by looping through the labs.
+            Lab aLab = (Lab) state.getBagOfAllLabs().get(i);
             double labTotalFunds = 0;
             int maxGrantSoFar = 0; // biggest grant = years the lab will have at least 1 postdoc.
             for (int n = 0; n < aLab.grants.size(); n++) { // loop through the grants of the lab to populate the total funds and search for the biggest one.
@@ -198,11 +199,11 @@ class Globals implements Steppable {
         // debugging //
 
         double effortCounter = 0;
-        for (int i = 0; i < state.getAllLabs().size(); i++) {
-            Lab aLab = (Lab) state.getAllLabs().get(i);
+        for (int i = 0; i < state.getBagOfAllLabs().size(); i++) {
+            Lab aLab = (Lab) state.getBagOfAllLabs().get(i);
             effortCounter += aLab.effort;
         }
-        this.averageEffort = effortCounter / state.getAllLabs().size();
+        this.averageEffort = effortCounter / state.getBagOfAllLabs().size();
         // write to file //
 
 

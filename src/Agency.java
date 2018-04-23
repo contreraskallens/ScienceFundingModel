@@ -24,6 +24,7 @@ class Agency implements Steppable {
         thisTurnsApplicants = new Bag();
     }
 
+    @Override
     public void step(SimState state){
 
         // each cycle, the agency evaluates each one of the labs that applied for funding based on their utility and awards them grants.
@@ -35,7 +36,7 @@ class Agency implements Steppable {
         if (includeError) {
             for (int i = 0; i < thisTurnsApplicants.size(); i++) { // sum of deviations from the mean
                 Lab aLab = (Lab) thisTurnsApplicants.get(i);
-                aLab.setUtility(aLab.getUtility() + (state.random.nextGaussian() * evaluationError)); // add a gaussian with a standard deviation of evaluationError.
+                aLab.setScoreForApplying(aLab.getScoreForApplying() + (state.random.nextGaussian() * evaluationError)); // add a gaussian with a standard deviation of evaluationError.
             }
         }
 
@@ -52,8 +53,8 @@ class Agency implements Steppable {
 
         //ScienceFunding simulation = (ScienceFunding) state; // cast state as ScienceFunding to acces parameters
 
-        if(simulation.getLottery() == false) {
-            thisTurnsApplicants.sort(Comparator.comparing(Lab::getUtility)); // order labs according to their utility
+        if(simulation.getLotteryOfFunding() == false) {
+            thisTurnsApplicants.sort(Comparator.comparing(Lab::getScoreForApplying)); // order labs according to their utility
         } else {
             thisTurnsApplicants.shuffle(state.random);
         }
