@@ -10,39 +10,49 @@ import java.util.Arrays;
 class Globals implements Steppable {
 
     //region Fields
-    private double aggregationWindow = 100;
-    private double falseDiscoveriesLastWindow;
-    private double numberOfPublicationsLastWindow;
-    private double falseDiscoveryRateLastWindow;
+    /*
+    Next parameters control aggregation frequency and the size of the window.
+    The per-turn measures are updated every n turns, where n is frequencyOfGlobalsAggregation.
+    In that turn, the x last turns are aggregated, where x is aggregationWindow.
+     */
+    private final int frequencyOfGlobalsAggregation = 10;
+    private final double aggregationWindow = 10;
+
     private DoubleBag allFDRLastWindow;
-    private double proportionOfTopicsExplored;
+    private DoubleBag allMeanTotalFundsLastWindow;
+    private DoubleBag allTotalFundsGiniLastWindow;
+    private DoubleBag allPostdocNumberMeanLastWindow;
+    private DoubleBag allPostdocNumberGiniLastWindow;
+
+    private double numberOfPublicationsThisTurn;
+    private double falseDiscoveriesThisTurn;
+    private double FDRThisTurn;
+
+    private double[] baseRateDistribution;
+    private int[] publicationsPerTopicDistribution;
+    private double[] totalFundsDistribution;
+    private double[] postdocNumberDistribution;
+
     private double meanBaseRate;
     private double baseRateSDev;
-    private double[] baseRateDistribution;
+    private double proportionOfTopicsExplored;
     private double meanPublicationsPerTopic;
     private double publicationsPerTopicSDev;
-    private int[] publicationsPerTopicDistribution;
+
+    private double falseDiscoveryRateLastWindow;
     private double meanTotalFundsLastWindow;
-    private DoubleBag allMeanTotalFundsLastWindow;
-    private double totalFundsSDev;
-    private double[] totalFundsDistribution;
     private double totalFundsGiniLastWindow;
-    private DoubleBag allTotalFundsGiniLastWindow;
     private double postdocNumberMeanLastWindow;
-    private DoubleBag allPostdocNumberMeanLastWindow;
-    private double postdocNumberSDev;
     private double postdocNumberGiniLastWindow;
-    private DoubleBag allPostdocNumberGiniLastWindow;
-    private double[] postdocNumberDistribution;
     //endregion
 
     /**
      * Constructor sets all global fields to 0 to initiate data collection.
      */
     public Globals() {
-        this.falseDiscoveriesLastWindow = 0;
+        this.falseDiscoveriesThisTurn = 0;
         this.allFDRLastWindow = new DoubleBag();
-        this.numberOfPublicationsLastWindow = 0;
+        this.numberOfPublicationsThisTurn = 0;
         this.falseDiscoveryRateLastWindow = 0;
         this.proportionOfTopicsExplored = 0;
         this.meanBaseRate = 0;
@@ -53,51 +63,54 @@ class Globals implements Steppable {
         this.publicationsPerTopicDistribution = new int[0];
         this.meanTotalFundsLastWindow = 0;
         this.allMeanTotalFundsLastWindow = new DoubleBag();
-        this.totalFundsSDev = 0;
         this.totalFundsDistribution = new double[0];
         this.totalFundsGiniLastWindow = 0;
         this.allTotalFundsGiniLastWindow = new DoubleBag();
         this.postdocNumberMeanLastWindow = 0;
         this.allPostdocNumberMeanLastWindow = new DoubleBag();
-        this.postdocNumberSDev = 0;
         this.postdocNumberGiniLastWindow = 0;
         this.allPostdocNumberGiniLastWindow = new DoubleBag();
         this.postdocNumberDistribution = new double[0];
     }
 
     /**
-     * Each turn that Globals is scheduled, agent updates series of measures of the state of the simulation via updateGlobals().
-     * Measures are accessed by Outputter and ScienceFundingWithUI via ScienceFunding.
+     * Each turn, Globals step and measure the globals for this turn.
+     * Every X turns, determined by ScienceFunding.frequencyOfGlobalsAggregation, the measures for each turn
+     * are aggregated through averaging of the last Y turns, determined by aggregationWindow.
+     * They are then written to a file by constructing an Outputter object.
      *
      * @param state The simulation state. Not necessary to cast as (ScienceFunding) here.
      */
     @Override
     public void step(SimState state) {
-        updateGlobals((ScienceFunding) state);
+        ScienceFunding simulation = (ScienceFunding) state;
+        if (state.schedule.getSteps() % frequencyOfGlobalsAggregation == 0) {
+            updateGlobalsAggregationAndWrite((ScienceFunding) state);
+        } else {
+            updateGlobalsThisTurn(simulation);
+        }
     }
 
     /**
-     * This function updates all of the different global measures.
-     * For better visualization and cleaner data collection, most measures (see variable names) aggregate
-     * the last x number of turns, where x is defined by parameter aggregationWindow.
-     * The aggregation is performed through different bags associated with the measures.
-     * After measures are collected and aggregated, write to file using Outputter.
+     * Generates global measures for this turn.
+     * FDR, mean and gini total funds, mean and gini postdoc number are then stored for aggregation later through
+     * updateGLobalsAggregation.
+     * After measuring these and adding them to the bags that hold all measures in the last X turns (determined by
+     * aggregationWindow), the temporary measure fields for this turn's false discovery rate are reset.
+     * Distributions and statistics in base rate and publications per topic are updated every turn, so they are not reset.
      *
-     * @param state The simulation state, casted as ScienceFunding.
+     * @param state The simulation state cast as ScienceFunding.
      */
-    private void updateGlobals(ScienceFunding state) {
-
-        double falseDiscoveryRateThisTurn = falseDiscoveriesLastWindow / numberOfPublicationsLastWindow;
-        if (numberOfPublicationsLastWindow == 0 || falseDiscoveriesLastWindow == 0) { // avoid dividing by 0
-            falseDiscoveryRateThisTurn = 0;
+    private void updateGlobalsThisTurn(ScienceFunding state) {
+        FDRThisTurn = falseDiscoveriesThisTurn / numberOfPublicationsThisTurn;
+        if (numberOfPublicationsThisTurn == 0 || falseDiscoveriesThisTurn == 0) { // avoid dividing by 0
+            falseDiscoveriesThisTurn = 0;
         }
-        allFDRLastWindow.add(falseDiscoveryRateThisTurn);
-        falseDiscoveryRateLastWindow = aggregateGlobal(allFDRLastWindow, aggregationWindow);
+        allFDRLastWindow.add(FDRThisTurn);
 
         baseRateDistribution = state.getEpistemicLandscape().toArray();
         meanBaseRate = calculateMean(baseRateDistribution);
         baseRateSDev = calculateStandardDev(baseRateDistribution, meanBaseRate);
-
         publicationsPerTopicDistribution = state.getPublicationRecordOfTopics().toArray();
         int numberOfExploredTopics = 0;
         for (int numberOfPubsThisTopic : publicationsPerTopicDistribution) {
@@ -109,9 +122,9 @@ class Globals implements Steppable {
         meanPublicationsPerTopic = calculateMean(publicationsPerTopicDistribution);
         publicationsPerTopicSDev = calculateStandardDev(publicationsPerTopicDistribution, meanPublicationsPerTopic);
 
-        totalFundsDistribution = new double[state.getBagOfAllLabs().size()]; // allocate arrays for total funds, total number of postdocs.
-        postdocNumberDistribution = new double[state.getBagOfAllLabs().size()];
 
+        totalFundsDistribution = new double[state.getBagOfAllLabs().size()]; // Allocate arrays for total funds, total number of postdocs.
+        postdocNumberDistribution = new double[state.getBagOfAllLabs().size()];
         /*
         Loop through labs and populate the arrays. Save the measures for this turn in the all...LastWindow array.
         After that, remove oldest measures until array has size specified by aggregationWindow using removeNonDestructively
@@ -132,23 +145,35 @@ class Globals implements Steppable {
         double totalFundsMeanThisTurn = totalFundsMeanAndGini[0];
         double totalFundsGiniThisTurn = totalFundsMeanAndGini[1];
         allMeanTotalFundsLastWindow.add(totalFundsMeanThisTurn);
-        meanTotalFundsLastWindow = aggregateGlobal(allMeanTotalFundsLastWindow, aggregationWindow);
         allTotalFundsGiniLastWindow.add(totalFundsGiniThisTurn);
-        totalFundsGiniLastWindow = aggregateGlobal(allTotalFundsGiniLastWindow, aggregationWindow);
-        totalFundsSDev = calculateStandardDev(totalFundsDistribution, meanTotalFundsLastWindow);
+
         double[] postdocNumberMeanAndGini = meanAndGini(postdocNumberDistribution);
         double postdocNumberMeanThisTurn = postdocNumberMeanAndGini[0];
         double postdocNumberGiniThisTurn = postdocNumberMeanAndGini[1];
         allPostdocNumberMeanLastWindow.add(postdocNumberMeanThisTurn);
-        postdocNumberMeanLastWindow = aggregateGlobal(allPostdocNumberMeanLastWindow, aggregationWindow);
         allPostdocNumberGiniLastWindow.add(postdocNumberGiniThisTurn);
+        resetThisTurnGlobals();
+    }
+
+    /**
+     * This function updates all of the global measures that aggregate over the determined window.
+     * Size of window is determined by aggregationWindow.
+     * The aggregation is performed through different bags associated with the measures.
+     * After measures are collected and aggregated, write to file using Outputter.
+     *
+     * @param state The simulation state, casted as ScienceFunding.
+     */
+    private void updateGlobalsAggregationAndWrite(ScienceFunding state) {
+        updateGlobalsThisTurn(state);
+        falseDiscoveryRateLastWindow = aggregateGlobal(allFDRLastWindow, aggregationWindow);
+        meanTotalFundsLastWindow = aggregateGlobal(allMeanTotalFundsLastWindow, aggregationWindow);
+        totalFundsGiniLastWindow = aggregateGlobal(allTotalFundsGiniLastWindow, aggregationWindow);
+        postdocNumberMeanLastWindow = aggregateGlobal(allPostdocNumberMeanLastWindow, aggregationWindow);
         postdocNumberGiniLastWindow = aggregateGlobal(allPostdocNumberGiniLastWindow, aggregationWindow);
-        postdocNumberSDev = calculateStandardDev(postdocNumberDistribution, postdocNumberMeanLastWindow);
 
         /*
         Construct an Outputter object. This writes globals to file through Outputter's construction method.
          */
-
         try {
             Outputter fileWriter = new Outputter(state);
             fileWriter = null;
@@ -259,27 +284,11 @@ class Globals implements Steppable {
     }
 
     /**
-     * Sets every measure field at 0 to measure again at this step time. Is called by ScienceMaster in step() method.
+     * Sets every measure that updates each turn to 0.
      */
-    public void resetGlobals() {
-        this.falseDiscoveriesLastWindow = 0;
-        this.numberOfPublicationsLastWindow = 0;
-        this.falseDiscoveryRateLastWindow = 0;
-        this.proportionOfTopicsExplored = 0;
-        this.meanBaseRate = 0;
-        this.baseRateSDev = 0;
-        this.baseRateDistribution = new double[0];
-        this.meanPublicationsPerTopic = 0;
-        this.publicationsPerTopicSDev = 0;
-        this.publicationsPerTopicDistribution = new int[0];
-        this.meanTotalFundsLastWindow = 0;
-        this.totalFundsSDev = 0;
-        this.totalFundsDistribution = new double[0];
-        this.totalFundsGiniLastWindow = 0;
-        this.postdocNumberMeanLastWindow = 0;
-        this.postdocNumberSDev = 0;
-        this.postdocNumberGiniLastWindow = 0;
-        this.postdocNumberDistribution = new double[0];
+    private void resetThisTurnGlobals() {
+        this.falseDiscoveriesThisTurn = 0;
+        this.numberOfPublicationsThisTurn = 0;
     }
 
     /**
@@ -292,7 +301,7 @@ class Globals implements Steppable {
      * @return The average of the values of the bag after pruning to desired length as a double.
      */
     private double aggregateGlobal(DoubleBag bagOfMeasures, double aggregationWindow) {
-        if (bagOfMeasures.size() > this.aggregationWindow) {
+        while (bagOfMeasures.size() > aggregationWindow) {
             bagOfMeasures.removeNondestructively(0);
         }
         double aggregatedMeasure = 0;
@@ -300,21 +309,25 @@ class Globals implements Steppable {
             aggregatedMeasure += bagOfMeasures.get(i);
         }
         aggregatedMeasure /= aggregationWindow;
-        return aggregatedMeasure;
+        if (aggregatedMeasure == Double.NaN) {
+            return 0;
+        } else {
+            return aggregatedMeasure;
+        }
     }
 
     /**
      * Adds 1 to the total number of publications for this turn.
      */
     public void addPublications() {
-        this.numberOfPublicationsLastWindow++;
+        this.numberOfPublicationsThisTurn++;
     }
 
     /**
      * Adds 1 to the total number of false discoveries of this turn.
      */
     public void addFalseDiscoveries() {
-        this.falseDiscoveriesLastWindow++;
+        this.falseDiscoveriesThisTurn++;
     }
 
 
@@ -356,10 +369,6 @@ class Globals implements Steppable {
         return meanTotalFundsLastWindow;
     }
 
-    public double getTotalFundsSDev() {
-        return totalFundsSDev;
-    }
-
     public double[] getTotalFundsDistribution() {
         return totalFundsDistribution;
     }
@@ -370,10 +379,6 @@ class Globals implements Steppable {
 
     public double getPostdocNumberMeanLastWindow() {
         return postdocNumberMeanLastWindow;
-    }
-
-    public double getPostdocNumberSDev() {
-        return postdocNumberSDev;
     }
 
     public double getPostdocNumberGiniLastWindow() {

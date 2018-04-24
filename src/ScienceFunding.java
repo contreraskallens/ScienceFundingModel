@@ -12,7 +12,6 @@ public class ScienceFunding extends SimState {
     private final int numberOfLabs = 100;
     private final double initialBaseRate = 0.1;
     private final int numberOfEstablishedTopics = 0;
-    private final int frequencyOfGlobalsSchedule = 100;
     private final double initialEffort = 75;
     private final double powerLevel = 0.8;
     private final double costOfEffortConstant = 0.2;
@@ -92,6 +91,16 @@ public class ScienceFunding extends SimState {
             }
         }
 
+        scienceMasterObject = new ScienceMaster();
+        schedule.scheduleRepeating(this.scienceMasterObject, 0, 1);
+
+        agencyObject = new Agency();
+        schedule.scheduleRepeating(this.agencyObject, 2, 1);
+
+        globalsObject = new Globals();
+        schedule.scheduleOnce(this.globalsObject);
+        schedule.scheduleRepeating(this.globalsObject, 3, 1);
+
         for (int i = 0; i < numberOfLabs; i++) {
             Double2D topicOfLab;
             int labTopicX;
@@ -137,16 +146,6 @@ public class ScienceFunding extends SimState {
             locationOfLaboratories.setObjectLocation(schedulingLab, labTopicX, labTopicY);
             schedulingLab.stoppable = schedule.scheduleRepeating(schedulingLab, 1, 1);
         }
-
-        scienceMasterObject = new ScienceMaster();
-        schedule.scheduleRepeating(this.scienceMasterObject, 0, 1);
-
-        agencyObject = new Agency();
-        schedule.scheduleRepeating(this.agencyObject, 2, 1);
-
-        globalsObject = new Globals();
-        schedule.scheduleOnce(this.globalsObject);
-        schedule.scheduleRepeating(this.globalsObject, 3, frequencyOfGlobalsSchedule);
     }
 
     /**
@@ -299,10 +298,6 @@ public class ScienceFunding extends SimState {
         return this.globalsObject.getMeanTotalFundsLastWindow();
     }
 
-    public double getFundStandardDev() {
-        return this.globalsObject.getTotalFundsSDev();
-    }
-
     public double[] getFundsDistribution() {
         return this.globalsObject.getTotalFundsDistribution();
     }
@@ -323,7 +318,4 @@ public class ScienceFunding extends SimState {
         return this.globalsObject.getPostdocNumberGiniLastWindow();
     }
 
-    public double getPostdocNumberStandardDev() {
-        return this.globalsObject.getPostdocNumberSDev();
-    }
 }

@@ -51,8 +51,8 @@ public class Outputter {
     private void prepareFile() throws IOException {
         BufferedWriter fileWriter = new BufferedWriter(new FileWriter(this.fileName));
         fileWriter.write("stepNumber," + "falseDiscoveryRate," + "rateOfDiscovery," +
-                "discoveredMean," + "discoveredStandardDev," + "publicationMean," + "publicationStandardDev," +
-                "fundsMean," + "fundsStandardDev," + "fundsGini," + "postdocNumberMean," + "postdocNumberStandardDev," +
+                "discoveredMean," + "discoveredStandardDev," + "publicationMean," +
+                "fundsMean," + "fundsGini," + "postdocNumberMean," + "postdocNumberStandardDev," +
                 "postdocNumberGini");
         fileWriter.newLine();
         fileWriter.flush();
@@ -75,8 +75,7 @@ public class Outputter {
         fileWriter.write(state.schedule.getSteps() + "," + globalsObject.getFalseDiscoveryRateLastWindow() + "," + globalsObject.getProportionOfTopicsExplored() + "," +
                 globalsObject.getMeanBaseRate() + "," + globalsObject.getBaseRateSDev() +
                 "," + globalsObject.getMeanPublicationsPerTopic() + "," + globalsObject.getPublicationsPerTopicSDev() + "," + globalsObject.getMeanTotalFundsLastWindow() + "," +
-                globalsObject.getTotalFundsSDev() + "," + globalsObject.getTotalFundsGiniLastWindow() + "," + globalsObject.getPostdocNumberMeanLastWindow() + "," +
-                globalsObject.getPostdocNumberSDev() + "," + globalsObject.getPostdocNumberGiniLastWindow());
+                +globalsObject.getTotalFundsGiniLastWindow() + "," + globalsObject.getPostdocNumberMeanLastWindow() + "," + globalsObject.getPostdocNumberGiniLastWindow());
         fileWriter.newLine();
         fileWriter.flush();
     }

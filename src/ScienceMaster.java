@@ -26,9 +26,6 @@ class ScienceMaster implements Steppable {
     @Override
     public void step(SimState state) {
         ScienceFunding simulation = (ScienceFunding) state;
-        Globals theGlobals = simulation.getGlobalsObject(); // access Globals to reset numbers each turn
-
-        theGlobals.resetGlobals();
         updateHighest(simulation);
         Lab dyingLab = chooseDyingLab(simulation);
         createALab(simulation, dyingLab);
