@@ -9,7 +9,9 @@ import java.io.IOException;
  */
 public class Outputter {
 
+    //region Fields
     private String fileName;
+    //endregion
 
     /**
      * Every time Outputter is constructed, it outputs the data contained in Globals to the file recorded in fileName.

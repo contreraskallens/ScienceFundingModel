@@ -7,6 +7,7 @@ import sim.util.Double2D;
 
 public class ScienceFunding extends SimState {
 
+    //region Parameters of Simulation
     private final int sizeOfLandscape = 200;
     private final int numberOfLabs = 100;
     private final double initialBaseRate = 0.1;
@@ -25,10 +26,13 @@ public class ScienceFunding extends SimState {
     private final double weightOfInnovationInFunding = 0;
     private final double weightOfPrestigeInFunding = 1;
     private final boolean lotteryOfFunding = false;
+
     private final double probabilityOfEffortMutation = 0.1;
     private final double standardDeviationOfEffortMutation = 10;
     private final int maximumTopicMutationDistance = 2;
-    //region Parameters and Objects
+    //endregion
+
+    //region Objects
     private Bag bagOfAllLabs;
     private int latestIdAssigned;
     private Agency agencyObject;
@@ -47,8 +51,6 @@ public class ScienceFunding extends SimState {
     public ScienceFunding(long seed) {
         super(seed);
     }
-
-    //region Methods
 
     /**
      * Main method loops the schedule class as per Mason manual.
@@ -154,13 +156,12 @@ public class ScienceFunding extends SimState {
     public void increaseLatestId() {
         latestIdAssigned++;
     }
-    //endregion
 
     //region Getters
 
-    /**
-     * The first set of getters are used by other objects to access parameters of the simulation and
-     * and objects that have been scheduled.
+    /*
+     The first set of getters are used by other objects to access parameters of the simulation and
+     and objects that have been scheduled.
      */
     public Agency getAgency() {
         return agencyObject;
@@ -258,8 +259,8 @@ public class ScienceFunding extends SimState {
         return standardDeviationOfEffortMutation;
     }
 
-    /**
-     * The remaining getters are used in visualization through ScienceFundingWithUI
+    /*
+     The remaining getters are used in visualization through ScienceFundingWithUI
      */
 
     public double getFalseDiscoveryRate() {

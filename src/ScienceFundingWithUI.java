@@ -15,10 +15,12 @@ import javax.swing.*;
 import java.awt.*;
 
 public class ScienceFundingWithUI extends GUIState {
+    //region Fields
     final ValueGridPortrayal2D landscapePortrayal = new ValueGridPortrayal2D();
     final SparseGridPortrayal2D labsPortrayal = new SparseGridPortrayal2D();
     public Display2D landscapeDisplay;
     public JFrame landscapeFrame;
+    //endregion
 
     /**
      * The next lines control the default plots to be displayed when opening the visualization.

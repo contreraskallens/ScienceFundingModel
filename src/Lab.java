@@ -17,6 +17,19 @@ import sim.util.IntBag;
  * Stoppable stores the switch to kill them from the simulation when dying.
  */
 class Lab implements Steppable {
+
+    //region Parameters
+    /*
+    The probability of changing location to a nearby topic each given cycle.
+     */
+    private double probabilityOfMoving = 0.5;
+    /*
+    The probability that, in the case of changing location, it will be to a random one.
+     */
+    private double probabilityOfRandomMove = 0.1;
+    //endregion
+
+    //region Fields
     private final int labId;
     double effort;
     double prestige;
@@ -27,10 +40,10 @@ class Lab implements Steppable {
     Stoppable stoppable;
     private int age;
     private double scoreForApplying;
-    private double probabilityOfMoving = 0.5; // the probability of changing location to a nearby topic each given cycle.
-    private double probabilityOfRandomMove = 0.1; // the probability that, in the case of changing location, it will be to a random one.
-    private double innovativenessOfTopic;
     private double relativePrestige;
+    private double innovativenessOfTopic;
+    //endregion
+
 
     /**
      * Creates lab in a specified location of landscape and with a specified unique identifier.
@@ -281,7 +294,7 @@ class Lab implements Steppable {
 
         double baseRateOfTopic = epistemicLandscape.get(xLocationInLandscape, yLocationInLandscape);
         innovativenessOfTopic = 1 - ((Math.log10(baseRateOfTopic / state.getInitialBaseRate())) / (Math.log10(0.5 / state.getInitialBaseRate())));
-        relativePrestige = prestige / scienceMaster.getHighestPublication();
+        relativePrestige = prestige / scienceMaster.getHighestPrestigeLastTurn();
 
         scoreForApplying = state.getWeightOfInnovationInFunding() * innovativenessOfTopic + state.getWeightOfPrestigeInFunding() * relativePrestige;
 
@@ -307,12 +320,6 @@ class Lab implements Steppable {
         }
     }
 
-    public double getScoreForApplying() {
-        return scoreForApplying;
-    }
-
-    //region Getters
-
     /**
      * This setter is used when including error in the funding agency's ranking of scores.
      *
@@ -320,6 +327,12 @@ class Lab implements Steppable {
      */
     public void setScoreForApplying(double newScore) {
         scoreForApplying = newScore;
+    }
+
+    //region Getters
+
+    public double getScoreForApplying() {
+        return scoreForApplying;
     }
 
     public double getPrestige() {

@@ -5,6 +5,8 @@ import sim.util.DoubleBag;
 import java.io.IOException;
 import java.util.Arrays;
 
+//TODO: globals working is wonky. Think better aggregation and all that. ScienceMaster seems to delete everything and aggregation feels pointless. This class smells weird.
+
 class Globals implements Steppable {
 
     //region Fields
@@ -66,6 +68,7 @@ class Globals implements Steppable {
     /**
      * Each turn that Globals is scheduled, agent updates series of measures of the state of the simulation via updateGlobals().
      * Measures are accessed by Outputter and ScienceFundingWithUI via ScienceFunding.
+     *
      * @param state The simulation state. Not necessary to cast as (ScienceFunding) here.
      */
     @Override
@@ -79,6 +82,7 @@ class Globals implements Steppable {
      * the last x number of turns, where x is defined by parameter aggregationWindow.
      * The aggregation is performed through different bags associated with the measures.
      * After measures are collected and aggregated, write to file using Outputter.
+     *
      * @param state The simulation state, casted as ScienceFunding.
      */
     private void updateGlobals(ScienceFunding state) {
@@ -155,6 +159,7 @@ class Globals implements Steppable {
 
     /**
      * Calculates the mean of the values in an array of doubles.
+     *
      * @param array An array of doubles.
      * @return The mean of the values of the array as a double.
      */
@@ -169,6 +174,7 @@ class Globals implements Steppable {
     /**
      * Calculates the mean of the values in an array of integers. Difference with version for doubles
      * is that it casts them as values to avoid truncating all decimal places.
+     *
      * @param array An array of integers.
      * @return The mean of the values of the array as a double.
      */
@@ -184,6 +190,7 @@ class Globals implements Steppable {
      * Calculates the mean of the values in an array of doubles and the Gini Index of the distribution of those values.
      * For Gini Index, uses simplified expression found in https://en.wikipedia.org/wiki/Gini_coefficient#Alternate_expressions.
      * Uses Arrays.sort()
+     *
      * @param array An array of doubles.
      * @return An array of doubles with length 2. [0] is the mean of the array, [1] is the Gini index.
      */
@@ -208,7 +215,7 @@ class Globals implements Steppable {
 
         double giniLeftHand = giniLeftHandNumerator / giniLeftHandDenominator;
         Double giniIndex = giniLeftHand - ((1 + array.length) / array.length);
-        if(giniIndex.isNaN()){
+        if (giniIndex.isNaN()) {
             giniIndex = (double) 0;
         }
         return new double[]{mean, giniIndex};
@@ -216,8 +223,9 @@ class Globals implements Steppable {
 
     /**
      * Calculates the standard deviation of the values in an array of doubles. Uses Math.sqrt.
+     *
      * @param array An array of doubles.
-     * @param mean The mean of the array supplied as double.
+     * @param mean  The mean of the array supplied as double.
      * @return The standard deviation of the array, as a double.
      */
     private double calculateStandardDev(double[] array, double mean) {
@@ -234,8 +242,9 @@ class Globals implements Steppable {
     /**
      * Calculates the standard deviation of the values in an array of ints. Uses Math.sqrt.
      * The difference with method for doubles is that this version casts values as doubles.
+     *
      * @param array An array of integers.
-     * @param mean The mean of the array as a double.
+     * @param mean  The mean of the array as a double.
      * @return The standard deviation of the supplied array as a double.
      */
     private double calculateStandardDev(int[] array, double mean) {
@@ -252,7 +261,7 @@ class Globals implements Steppable {
     /**
      * Sets every measure field at 0 to measure again at this step time. Is called by ScienceMaster in step() method.
      */
-    public void resetGlobals(){
+    public void resetGlobals() {
         this.falseDiscoveriesLastWindow = 0;
         this.numberOfPublicationsLastWindow = 0;
         this.falseDiscoveryRateLastWindow = 0;
@@ -277,16 +286,17 @@ class Globals implements Steppable {
      * Aggregates the values in a bag of doubles by averaging them.
      * Before aggregating, it prunes the bag non-destructively until the number of items in the bag
      * matches the number of items requested.
-     * @param bagOfMeasures A bag of doubles with values to aggregate.
+     *
+     * @param bagOfMeasures     A bag of doubles with values to aggregate.
      * @param aggregationWindow The number of last steps that should be aggregated
      * @return The average of the values of the bag after pruning to desired length as a double.
      */
-    private double aggregateGlobal(DoubleBag bagOfMeasures, double aggregationWindow){
+    private double aggregateGlobal(DoubleBag bagOfMeasures, double aggregationWindow) {
         if (bagOfMeasures.size() > this.aggregationWindow) {
             bagOfMeasures.removeNondestructively(0);
         }
         double aggregatedMeasure = 0;
-        for(int i = 0 ; i < bagOfMeasures.size(); i++){
+        for (int i = 0; i < bagOfMeasures.size(); i++) {
             aggregatedMeasure += bagOfMeasures.get(i);
         }
         aggregatedMeasure /= aggregationWindow;
