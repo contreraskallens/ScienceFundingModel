@@ -1,76 +1,99 @@
 import sim.field.grid.DoubleGrid2D;
-import sim.util.*;
+import sim.util.Bag;
+import sim.util.Double2D;
+import sim.util.DoubleBag;
+import sim.util.IntBag;
+
 import static java.lang.Math.pow;
 
+/**
+ * This class contains static methods to modify the epistemic landscape according to document describing model.
+ */
 class LandscapeUtils {
-    // implements static methods to manipulate the landscape //
 
-    static void increaseAndDisperse(DoubleGrid2D landscape, int originalCellX, int originalCellY, double amount) {
-        // includes dispersal. takes cell, adds amount, and then adds dispersing amount to neighboring cells proportional to their distance to the original cell.
-        // the dispersion stops when the amount added to the cells is less than 0.00000001.
-        // changed cells are add to a bag (previousChanges) so that they are not picked up as their neighbor's neighbors when the recursive dispersal happens.
-
-        Double originalValue = landscape.get(originalCellX, originalCellY);
-        Double2D originalCell = new Double2D(originalCellX, originalCellY);
-        landscape.set(originalCellX, originalCellY, (originalValue + amount)); // add the amount specified in the call to the specified cell.
-        Bag previousChanges = new Bag();
-        previousChanges.add(originalCell);
-
-        changeNeighbors(landscape, originalCell, originalCell, amount, previousChanges); // call the recursive function to disperse the original amount added to the original cell to all of its neighbors.
+    /**
+     * This method increases the base rate of a topic ("original topic") by a set amount.
+     * After increasing this base rate, the change is dispersed to its neighbors and their
+     * neighbors via recursive changeNeighbors().
+     * Topics that have been changed already are added to a bag to avoid infinite recursion.
+     *
+     * @param epistemicLandscape The Double grid that contains the base rates of all topics in the landscape.
+     * @param originalTopicX     The x dimension of the topic to be changed and whose change are to be dispersed.
+     * @param originalTopicY     The y dimension of the topic to be changed and whose change are to be dispersed.
+     * @param changeInBaseRate   The amount to be added to the topic in the center of the dispersal (the original topic).
+     */
+    static void increaseAndDisperse(DoubleGrid2D epistemicLandscape, int originalTopicX, int originalTopicY, double changeInBaseRate) {
+        Double originalBaseRate = epistemicLandscape.get(originalTopicX, originalTopicY);
+        Double2D originalTopic = new Double2D(originalTopicX, originalTopicY);
+        epistemicLandscape.set(originalTopicX, originalTopicY, (originalBaseRate + changeInBaseRate));
+        Bag topicsThatHaveBeenChanged = new Bag();
+        topicsThatHaveBeenChanged.add(originalTopic);
+        changeNeighbors(epistemicLandscape, originalTopic, originalTopic, changeInBaseRate, topicsThatHaveBeenChanged);
     }
 
-    static void changeNeighbors(DoubleGrid2D landscape, Double2D originalCell, Double2D thisCell, double originalAmount, Bag previousChanges) {
-        // recursive function. takes the landscape, the cell originally changed and the cell to change along with a Bag to avoid stack overflow and the original amount changed.
-        // it loops through the neighbors of a cell and makes them change their value according to the distance to the original cell.
-        // each of those neighbors calls the same function on their neighbors, until the value added to the cells is equal or less than 0.00000001 (min value).
-        // after the function is called on a cell, it is added to the bag "previousChanges".
-        // the function is only called on cells not previously changed. this avoids infinite recursion.
-
-        IntBag neighborsX = new IntBag(); // allocate the bags needed by getMooreNeighbors().
+    /**
+     * Recursive function that loops through the neighbors of a topic and changes their base rate
+     * based on their distance to the original topic being changed. The dispersed change in base rate is
+     * calculated by getDispersedBaseRate. When the change in base rate for a topic's neighbors
+     * is less than 0.00000001, the recursive process stops.
+     *
+     * @param epistemicLandscape       The epistemic landscape as a grid of doubles expressing the current base rates of all topics.
+     * @param originalTopic            The topic that was originally being changed (the first one in which increaseAndDisperse was called.
+     * @param thisTopic                The topic being changed by the current function (recursive).
+     * @param baseRateChangeInOriginal The amount added to the original topic whose value with dispersal has to be added to the new one.
+     * @param previouslyChangedTopics  The bag of the topics that have been changed already.
+     */
+    static void changeNeighbors(DoubleGrid2D epistemicLandscape, Double2D originalTopic, Double2D thisTopic, double baseRateChangeInOriginal, Bag previouslyChangedTopics) {
+        IntBag neighborsX = new IntBag();
         IntBag neighborsY = new IntBag();
-        DoubleBag neighborsValues = new DoubleBag();
-        landscape.getMooreNeighbors((int) thisCell.x, (int) thisCell.y, 1, 0, false, neighborsValues, neighborsX, neighborsY); // get the moore neighbors of the cell previously changed.
+        DoubleBag neighborsBaseRate = new DoubleBag();
+        epistemicLandscape.getMooreNeighbors((int) thisTopic.x, (int) thisTopic.y, 1, 0, false, neighborsBaseRate, neighborsX, neighborsY); // get the moore neighbors of the cell previously changed.
 
-        for (int i = 0; i < neighborsX.size(); i++) { // loop through the neighbors of the original cell.
+        for (int i = 0; i < neighborsX.size(); i++) {
             Double2D thisNeighbor = new Double2D(neighborsX.get(i), neighborsY.get(i));
-            double thisNeighborValue = landscape.get((int) thisNeighbor.x, (int) thisNeighbor.y); // allocate original value of the neighbor.
-            if ((thisNeighbor.x == originalCell.x) && (thisNeighbor.y == originalCell.y)) { // if this neighbor is the original cell (the one in which increaseAndDisperse() was called), go to next iteration of the loop.
+            double thisNeighborBaseRate = epistemicLandscape.get((int) thisNeighbor.x, (int) thisNeighbor.y);
+            if ((thisNeighbor.x == originalTopic.x) && (thisNeighbor.y == originalTopic.y)) {
                 continue;
             }
-            if (previousChanges.contains(thisNeighbor)) { // if the cell was changed before, go to the next iteration of the loop.
+            if (previouslyChangedTopics.contains(thisNeighbor)) {
                 continue;
             }
+            Double newBaseRate = getDispersedBaseRate(epistemicLandscape, originalTopic, thisNeighbor, baseRateChangeInOriginal);
 
-            Double newValue = getValueWithDispersal(landscape, originalCell, thisNeighbor, originalAmount); // get the new value for the cell using custom function getValueWithDispersal().
-
-            // if the change is below the precision level (0.00000001), this function returns the same value that was provided to it.
-
-            if (newValue != thisNeighborValue) { // if the value returned is different than the value provided, change the value in the landscape and add the cell to the bag of previously changed cells.
-                landscape.set(neighborsX.get(i), neighborsY.get(i), newValue);
-                previousChanges.add(thisNeighbor);
-                changeNeighbors(landscape, originalCell, thisNeighbor, originalAmount, previousChanges); // recursively call this same function on all of this cell's neighbors.
-            } else { // if it didn't change because the amount added was below the precision level, the cell retains its value.
-                landscape.set(neighborsX.get(i), neighborsY.get(i), thisNeighborValue);
+            if (newBaseRate != thisNeighborBaseRate) {
+                epistemicLandscape.set(neighborsX.get(i), neighborsY.get(i), newBaseRate);
+                previouslyChangedTopics.add(thisNeighbor);
+                changeNeighbors(epistemicLandscape, originalTopic, thisNeighbor, baseRateChangeInOriginal, previouslyChangedTopics);
+            } else {
+                epistemicLandscape.set(neighborsX.get(i), neighborsY.get(i), thisNeighborBaseRate);
             }
         }
     }
 
-    static double getValueWithDispersal(DoubleGrid2D landscape, Double2D originalCell, Double2D thisCell, double originalAmount) {
-        // returns amount to be added after dispersion dependent on euclidean distance.
-
-        double oldValue = landscape.get((int) thisCell.x, (int) thisCell.y);
-        double eucDistance = originalCell.distance(thisCell); // euclidean distance of this cell to the original cell (the one in which increaseAndDisperse() was called)
-        double newValue = pow(originalAmount, eucDistance); // the amount added to the original cell to the power of the euclidean distance between this cell and the original cell.
-
-        if (newValue >= 0.00000001) { // only add the amount to the value if the amount to be added is higher than 0.00000001.
-            newValue += oldValue;
-        } else { // if it's not, return the old value unchanged.
-            newValue = oldValue;
+    /**
+     * This method returns the new value of the topic being modified, dependent on eucledian distance between the
+     * original topic and the topic whose base rate is being changed.
+     *
+     * @param epistemicLandscape       The grid of doubles with the base rates of every topic in the epistemic landscape.
+     * @param originalTopic            The original topic in which increaseAndDisperse() was called.
+     * @param thisTopic                The topic whose change in base rate is being calculated.
+     * @param baseRateChangeInOriginal The amount that was added to the original topic in increaseAndDisperse()
+     * @return Returns the new base rate of the topic being modified. If the change in base rate will be lower than
+     * 0.00000001, the returned base rate will be the same as the value without modifications.
+     */
+    static double getDispersedBaseRate(DoubleGrid2D epistemicLandscape, Double2D originalTopic, Double2D thisTopic, double baseRateChangeInOriginal) {
+        double oldBaseRate = epistemicLandscape.get((int) thisTopic.x, (int) thisTopic.y);
+        double eucledianDistance = originalTopic.distance(thisTopic);
+        double newBaseRate = pow(baseRateChangeInOriginal, eucledianDistance);
+        if (newBaseRate >= 0.00000001) {
+            newBaseRate += oldBaseRate;
+        } else {
+            newBaseRate = oldBaseRate;
         }
-        if (newValue >= 0.5) { // if the value resulting from the addition is higher than the cap of 0.5, return 0.5. else, return the value.
+        if (newBaseRate >= 0.5) {
             return 0.5;
         } else {
-            return newValue;
+            return newBaseRate;
         }
     }
 }

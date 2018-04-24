@@ -7,417 +7,371 @@ import java.util.Arrays;
 
 class Globals implements Steppable {
 
-    // fields //
+    //region Fields
+    private double aggregationWindow = 100;
+    private double falseDiscoveriesLastWindow;
+    private double numberOfPublicationsLastWindow;
+    private double falseDiscoveryRateLastWindow;
+    private DoubleBag allFDRLastWindow;
+    private double proportionOfTopicsExplored;
+    private double meanBaseRate;
+    private double baseRateSDev;
+    private double[] baseRateDistribution;
+    private double meanPublicationsPerTopic;
+    private double publicationsPerTopicSDev;
+    private int[] publicationsPerTopicDistribution;
+    private double meanTotalFundsLastWindow;
+    private DoubleBag allMeanTotalFundsLastWindow;
+    private double totalFundsSDev;
+    private double[] totalFundsDistribution;
+    private double totalFundsGiniLastWindow;
+    private DoubleBag allTotalFundsGiniLastWindow;
+    private double postdocNumberMeanLastWindow;
+    private DoubleBag allPostdocNumberMeanLastWindow;
+    private double postdocNumberSDev;
+    private double postdocNumberGiniLastWindow;
+    private DoubleBag allPostdocNumberGiniLastWindow;
+    private double[] postdocNumberDistribution;
+    //endregion
 
-    private double falseDiscoveries = 0; // total number of false discoveries
-    private double numberOfPublications = 0; // total number of publications
-    private double falseDiscoveryRate; // the rate of publications that are false discoveries.
-    private DoubleBag falseDiscoveryRates; // store false discovery rates to aggregate on globals.
-    private double rateOfDiscovery; // the proportion of topics that have been discovered (number of publications > 1).
-    private double discoveredMean; // the mean baserate of each topic in the landscape.
-    private double discoveredStandardDev;  // the standard deviation of the rates of the landscape.
-    private double[] discoveredDistribution; // all base rates of the landscape in array form.
-    private double publicationMean; // the mean number of publications of each topic.
-    private double publicationStandardDev; // the standard deviation of the publications of each topic.
-    private int[] publicationDistribution; // all values of publications in each topic in array form.
-    private double fundsMean; // the mean total amount of funds (years of funding) of the labs.
-    private DoubleBag fundsMeans; // bag for aggregation of means
-    private double fundsStandardDev; // the standard deviation of the total amnount of funds of the labs.
-    private double[] fundsDistribution; // all values of total amount of funds in array form.
-    private double fundsGini; // the gini index of the distribution of total amount of funds in the lab population.
-    private DoubleBag fundsGiniIndices; // bag for aggregation
-    private double postdocNumberMean; // mean number of postdocs of every lab (total amount of grants)
-    private DoubleBag postdocNumberMeans; // bag for aggregation
-    private double postdocNumberStandardDev; // standard deviation of the number of postdocs.
-    private double postdocNumberGini; // gini index of the distribution of number of postdocs.
-    private DoubleBag postdocNumberGinis; // bag for aggregation
-    private double[] postdocNumberDistribution; // all values of number of postdocs, in array form.
-    private double postdocDurationMean; // the mean amount of cycles that the lab will have at least one postdoc ( 0 to 5).
-    private DoubleBag postdocDurationMeans; // bag for aggregation
-    private double[] postdocDurationDistribution; // the distribution of amount of cycles that labs will have at least one postdoc.
-    private double postdocDurationStandardDev; // the standard deviation of the amount of cycles that labs will have at least one postdoc.
-    private double postdocDurationGini; // the gini index of the distribution of the amount of cycles that labs will have at least one postdoc.
-    private DoubleBag postdocDurationGinis; // bag for aggregation
-
-
-    // debugging //
-    private double averageEffort;
-
-
+    /**
+     * Constructor sets all global fields to 0 to initiate data collection.
+     */
     public Globals() {
-        this.falseDiscoveries = 0;
-        this.falseDiscoveryRates = new DoubleBag();
-        this.numberOfPublications = 0;
-        this.falseDiscoveryRate = 0;
-        this.rateOfDiscovery = 0;
-        this.discoveredMean = 0;
-        this.discoveredStandardDev = 0;
-        this.discoveredDistribution = new double[0];
-        this.publicationMean = 0;
-        this.publicationStandardDev = 0;
-        this.publicationDistribution = new int[0];
-        this.fundsMean = 0;
-        this.fundsMeans = new DoubleBag();
-        this.fundsStandardDev = 0;
-        this.fundsDistribution = new double[0];
-        this.fundsGini = 0;
-        this.fundsGiniIndices = new DoubleBag();
-        this.postdocNumberMean = 0;
-        this.postdocNumberMeans = new DoubleBag();
-        this.postdocNumberStandardDev = 0;
-        this.postdocNumberGini = 0;
-        this.postdocNumberGinis = new DoubleBag();
+        this.falseDiscoveriesLastWindow = 0;
+        this.allFDRLastWindow = new DoubleBag();
+        this.numberOfPublicationsLastWindow = 0;
+        this.falseDiscoveryRateLastWindow = 0;
+        this.proportionOfTopicsExplored = 0;
+        this.meanBaseRate = 0;
+        this.baseRateSDev = 0;
+        this.baseRateDistribution = new double[0];
+        this.meanPublicationsPerTopic = 0;
+        this.publicationsPerTopicSDev = 0;
+        this.publicationsPerTopicDistribution = new int[0];
+        this.meanTotalFundsLastWindow = 0;
+        this.allMeanTotalFundsLastWindow = new DoubleBag();
+        this.totalFundsSDev = 0;
+        this.totalFundsDistribution = new double[0];
+        this.totalFundsGiniLastWindow = 0;
+        this.allTotalFundsGiniLastWindow = new DoubleBag();
+        this.postdocNumberMeanLastWindow = 0;
+        this.allPostdocNumberMeanLastWindow = new DoubleBag();
+        this.postdocNumberSDev = 0;
+        this.postdocNumberGiniLastWindow = 0;
+        this.allPostdocNumberGiniLastWindow = new DoubleBag();
         this.postdocNumberDistribution = new double[0];
-        this.postdocDurationMean = 0;
-        this.postdocDurationMeans = new DoubleBag();
-        this.postdocDurationDistribution = new double[0];
-        this.postdocDurationStandardDev = 0;
-        this.postdocDurationGini = 0;
-        this.postdocDurationGinis = new DoubleBag();
     }
 
+    /**
+     * Each turn that Globals is scheduled, agent updates series of measures of the state of the simulation via updateGlobals().
+     * Measures are accessed by Outputter and ScienceFundingWithUI via ScienceFunding.
+     * @param state The simulation state. Not necessary to cast as (ScienceFunding) here.
+     */
     @Override
     public void step(SimState state) {
-        // each turn that it is scheduled (interval controlled by ScienceFunding.frequencyOfGlobals), the globals agent updates a
-        // series of measures of the state of the simulation. these are stored in the object's static fields, and accessed by the UI console
-        // and the Outputter.
-
         updateGlobals((ScienceFunding) state);
     }
 
+    /**
+     * This function updates all of the different global measures.
+     * For better visualization and cleaner data collection, most measures (see variable names) aggregate
+     * the last x number of turns, where x is defined by parameter aggregationWindow.
+     * The aggregation is performed through different bags associated with the measures.
+     * After measures are collected and aggregated, write to file using Outputter.
+     * @param state The simulation state, casted as ScienceFunding.
+     */
     private void updateGlobals(ScienceFunding state) {
 
-        // false discovery rate aggregated over 100 turns (average) //
-
-        double falseDiscoveryThisTurn = falseDiscoveries / numberOfPublications;
-        if (numberOfPublications == 0 || falseDiscoveries == 0) {
-            falseDiscoveryThisTurn = 0;
+        double falseDiscoveryRateThisTurn = falseDiscoveriesLastWindow / numberOfPublicationsLastWindow;
+        if (numberOfPublicationsLastWindow == 0 || falseDiscoveriesLastWindow == 0) { // avoid dividing by 0
+            falseDiscoveryRateThisTurn = 0;
         }
+        allFDRLastWindow.add(falseDiscoveryRateThisTurn);
+        falseDiscoveryRateLastWindow = aggregateGlobal(allFDRLastWindow, aggregationWindow);
 
-        falseDiscoveryRates.add(falseDiscoveryThisTurn);
+        baseRateDistribution = state.getEpistemicLandscape().toArray();
+        meanBaseRate = calculateMean(baseRateDistribution);
+        baseRateSDev = calculateStandardDev(baseRateDistribution, meanBaseRate);
 
-        falseDiscoveryRate = aggregateGlobal(falseDiscoveryRates, 100);
-
-        // landscape discovery mean and standard deviation //
-
-        double[] landscapeArray = state.getEpistemicLandscape().toArray(); // all base rates from the landscape.
-        discoveredDistribution = landscapeArray; // the distribution of each base rate in array form.
-        discoveredMean = calculateMean(landscapeArray); // the mean base rate of the landscape.
-        discoveredStandardDev = calculateStandardDev(landscapeArray, discoveredMean); // standard deviation of the base rates of the landscape.
-
-        // publication metrics //
-
-        // topic publication rate //
-
-        int[] pubsArray = state.getPublicationRecordOfTopics().toArray();
-        publicationDistribution = pubsArray; // all publications of every topic, in array form.
-        int exploredTopics = 0; // number of topics with more than 0 publications
-        for (int aPubsArray1 : pubsArray) { // loop through all topics and add 1 to exploredTopics if it has at least 1 publication.
-            if (aPubsArray1 > 0) {
-                exploredTopics++;
+        publicationsPerTopicDistribution = state.getPublicationRecordOfTopics().toArray();
+        int numberOfExploredTopics = 0;
+        for (int numberOfPubsThisTopic : publicationsPerTopicDistribution) {
+            if (numberOfPubsThisTopic > 0) {
+                numberOfExploredTopics++;
             }
         }
-        rateOfDiscovery = (double) exploredTopics / pubsArray.length; // rate of discovery: proportion of topics with more than publications.
+        proportionOfTopicsExplored = (double) numberOfExploredTopics / publicationsPerTopicDistribution.length;
+        meanPublicationsPerTopic = calculateMean(publicationsPerTopicDistribution);
+        publicationsPerTopicSDev = calculateStandardDev(publicationsPerTopicDistribution, meanPublicationsPerTopic);
 
-        // mean and s //
+        totalFundsDistribution = new double[state.getBagOfAllLabs().size()]; // allocate arrays for total funds, total number of postdocs.
+        postdocNumberDistribution = new double[state.getBagOfAllLabs().size()];
 
-        publicationMean = calculateMean(pubsArray); // mean amount of publications.
-        publicationStandardDev = calculateStandardDev(pubsArray, publicationMean); // standard deviation of the amount of publications per topic.
-
-        // funds and postdoc metrics //
-
-        double[] fundsArray = new double[state.getBagOfAllLabs().size()]; // allocate arrays for total funds, total number of postdocs, and years that lab will have at least 1 postdoc.
-        double[] postdocNumberArray = new double[state.getBagOfAllLabs().size()];
-        double[] postdocDurationArray = new double[state.getBagOfAllLabs().size()];
-
-        for (int i = 0; i < state.getBagOfAllLabs().size(); i++) { // populate the arrays by looping through the labs.
-            Lab aLab = (Lab) state.getBagOfAllLabs().get(i);
-            double labTotalFunds = 0;
-            int maxGrantSoFar = 0; // biggest grant = years the lab will have at least 1 postdoc.
-            for (int n = 0; n < aLab.grants.size(); n++) { // loop through the grants of the lab to populate the total funds and search for the biggest one.
-                labTotalFunds += aLab.grants.get(n);
-                if (aLab.grants.get(n) > maxGrantSoFar) {
-                    maxGrantSoFar = aLab.grants.get(n);
-                }
-            }
-            fundsArray[i] = labTotalFunds; // sum of every grant
-            postdocNumberArray[i] = aLab.grants.size(); // number of grants
-            postdocDurationArray[i] = maxGrantSoFar; // biggest grant
-
-        }
-
-        // mean, gini, standard deviation of funds (aggregated over 100 turns) //
-
-        fundsDistribution = fundsArray; // all values in array form.
-        double[] fundsResults = meanAndGini(fundsArray); // use custom function to return mean and gini index of distribution. [mean, gini]
-        double fundsMeanThisTurn = fundsResults[0];
-        double fundsGiniThisTurn = fundsResults[1];
-
-        fundsMeans.add(fundsMeanThisTurn);
-
-        fundsMean = aggregateGlobal(fundsMeans, 100);
-
-        fundsGiniIndices.add(fundsGiniThisTurn);
-        fundsGini = aggregateGlobal(fundsGiniIndices, 100);
-
-        if (fundsGiniIndices.size() > 100) {
-            fundsGiniIndices.removeNondestructively(0);
-        }
-
-        fundsGini = 0;
-        for (int i = 0; i < fundsGiniIndices.size(); i++) {
-            fundsGini += fundsGiniIndices.get(i);
-        }
-        fundsGini /= fundsGiniIndices.size();
-
-        fundsStandardDev = calculateStandardDev(fundsArray, fundsMean); // use custom function to return standard deviation.
-
-        // postdoc metrics //
-
-        postdocNumberDistribution = postdocNumberArray; // all total number of postdocs in array form
-        postdocDurationDistribution = postdocDurationArray; // all number of cycles that lab will have at least one postdoc in array form
-        double[] postdocNumberResults = meanAndGini(postdocNumberArray); // use custom function to return mean and gini of number of postdocs. [mean, gini]
-        double postdocNumberMeanThisTurn = postdocNumberResults[0];
-        double postdocNumberGiniThisTurn = postdocNumberResults[1];
-        postdocNumberMeans.add(postdocNumberMeanThisTurn);
-        postdocNumberMean = aggregateGlobal(postdocNumberMeans, 100);
-        postdocNumberGinis.add(postdocNumberGiniThisTurn);
-        postdocNumberGini = aggregateGlobal(postdocNumberGinis, 100);
-        postdocNumberStandardDev = calculateStandardDev(postdocNumberArray, postdocNumberMean); // standard deviation of number of postdocs.
-
-        double[] postdocDurationResults = meanAndGini(postdocDurationArray); // use custom function to return mean and gini index of distribution of cycles that lab will have at least 1 postdoc. [mean, gini]
-        double postdocDurationMeanThisTurn = postdocDurationResults[0];
-        double postdocDurationGiniThisTurn = postdocDurationResults[1];
-        postdocDurationMeans.add(postdocDurationMeanThisTurn);
-        postdocDurationMean = aggregateGlobal(postdocDurationMeans, 100);
-        postdocDurationGinis.add(postdocDurationGiniThisTurn);
-        postdocDurationGini = aggregateGlobal(postdocDurationGinis, 100);
-
-        postdocDurationStandardDev = calculateStandardDev(postdocDurationArray, postdocDurationMean); // standard deviation of cycles that lab will have at least 1 postdoc.
-
-
-        // debugging //
-
-        double effortCounter = 0;
+        /*
+        Loop through labs and populate the arrays. Save the measures for this turn in the all...LastWindow array.
+        After that, remove oldest measures until array has size specified by aggregationWindow using removeNonDestructively
+        to preserve the order of the bag.
+        Use method meanAndGini to obtain those measures.
+         */
         for (int i = 0; i < state.getBagOfAllLabs().size(); i++) {
-            Lab aLab = (Lab) state.getBagOfAllLabs().get(i);
-            effortCounter += aLab.effort;
+            Lab thisLab = (Lab) state.getBagOfAllLabs().get(i);
+            double thisLabTotalFunds = 0;
+            for (int n = 0; n < thisLab.grants.size(); n++) {
+                thisLabTotalFunds += thisLab.grants.get(n);
+            }
+            totalFundsDistribution[i] = thisLabTotalFunds;
+            postdocNumberDistribution[i] = thisLab.grants.size();
         }
-        this.averageEffort = effortCounter / state.getBagOfAllLabs().size();
-        // write to file //
 
+        double[] totalFundsMeanAndGini = meanAndGini(totalFundsDistribution);
+        double totalFundsMeanThisTurn = totalFundsMeanAndGini[0];
+        double totalFundsGiniThisTurn = totalFundsMeanAndGini[1];
+        allMeanTotalFundsLastWindow.add(totalFundsMeanThisTurn);
+        meanTotalFundsLastWindow = aggregateGlobal(allMeanTotalFundsLastWindow, aggregationWindow);
+        allTotalFundsGiniLastWindow.add(totalFundsGiniThisTurn);
+        totalFundsGiniLastWindow = aggregateGlobal(allTotalFundsGiniLastWindow, aggregationWindow);
+        totalFundsSDev = calculateStandardDev(totalFundsDistribution, meanTotalFundsLastWindow);
+        double[] postdocNumberMeanAndGini = meanAndGini(postdocNumberDistribution);
+        double postdocNumberMeanThisTurn = postdocNumberMeanAndGini[0];
+        double postdocNumberGiniThisTurn = postdocNumberMeanAndGini[1];
+        allPostdocNumberMeanLastWindow.add(postdocNumberMeanThisTurn);
+        postdocNumberMeanLastWindow = aggregateGlobal(allPostdocNumberMeanLastWindow, aggregationWindow);
+        allPostdocNumberGiniLastWindow.add(postdocNumberGiniThisTurn);
+        postdocNumberGiniLastWindow = aggregateGlobal(allPostdocNumberGiniLastWindow, aggregationWindow);
+        postdocNumberSDev = calculateStandardDev(postdocNumberDistribution, postdocNumberMeanLastWindow);
+
+        /*
+        Construct an Outputter object. This writes globals to file through Outputter's construction method.
+         */
 
         try {
-            Outputter io = new Outputter(state); // outputter writes to a file all globals as part of its construction. thus, it's assigned and then immediately cleaned from memory after it writes everything.
-            io = null;
+            Outputter fileWriter = new Outputter(state);
+            fileWriter = null;
         } catch (IOException io) {
             io.printStackTrace();
         }
     }
 
+    /**
+     * Calculates the mean of the values in an array of doubles.
+     * @param array An array of doubles.
+     * @return The mean of the values of the array as a double.
+     */
     private double calculateMean(double[] array) {
-        // calculates the mean of an array of doubles
-
         double mean = 0;
-        for (double aDouble : array) {
-            mean += aDouble;
+        for (double thisDouble : array) {
+            mean += thisDouble;
         }
         return mean / array.length;
     }
 
+    /**
+     * Calculates the mean of the values in an array of integers. Difference with version for doubles
+     * is that it casts them as values to avoid truncating all decimal places.
+     * @param array An array of integers.
+     * @return The mean of the values of the array as a double.
+     */
     private double calculateMean(int[] array) {
-        // calculates the mean of an array of integers. difference with above is that it has to cast them as double before division.
         double mean = 0;
-        for (int anInt : array) {
-            mean += (double) anInt;
+        for (int thisInt : array) {
+            mean += (double) thisInt;
         }
         return mean / array.length;
     }
 
+    /**
+     * Calculates the mean of the values in an array of doubles and the Gini Index of the distribution of those values.
+     * For Gini Index, uses simplified expression found in https://en.wikipedia.org/wiki/Gini_coefficient#Alternate_expressions.
+     * Uses Arrays.sort()
+     * @param array An array of doubles.
+     * @return An array of doubles with length 2. [0] is the mean of the array, [1] is the Gini index.
+     */
     private double[] meanAndGini(double[] array) {
-        // calculates both the mean of an array and the gini coefficient of the distribution of its values.
-        // [0] is mean, [1] is gini coefficient.
-
-        double giniNumerator = 0; // the numerator of the calculation of gini coefficient.
-        double giniDenominator = 0; // the denominator of the calculation of gini coefficient.
-        double mean = 0;
-        Arrays.sort(array); // sort the array for gini coefficient calculation.
+        /*
+        Gini calculation determines the parts of the equation separately. In a non-increasingly ordered array of values
+        Yi, where i = 1 .... n:
+        First, it calculates the numerator (2 * sum(i * Yi)). Then, calculates the denominator (n * sum(Yi)). After
+        solving the division between the numerator and the denominator, it calculates the right hand of the equation:
+        n + 1 / n.
+        */
+        Arrays.sort(array);
+        double giniLeftHandNumerator = 0;
+        double giniLeftHandDenominator = 0;
+        double mean = calculateMean(array);
         for (int i = 0; i < array.length; i++) {
-            mean += array[i]; // sum each value to the mean calculator
-            giniNumerator += array[i] * (i + 1); // add to the numerator each value times its place in the sorted array + 1.
-            giniDenominator += array[i]; // add the value to the denominator.
+            giniLeftHandNumerator += array[i] * (i + 1); // Add to the numerator each value times its place in the sorted array + 1.
+            giniLeftHandDenominator += array[i]; // Add the value by itself to the denominator.
         }
-        mean /= array.length; // calculate mean
-        giniNumerator *= 2; // multiply gini numerator by 2
-        giniDenominator *= array.length; // multiply gini denominator by the number of values
+        giniLeftHandNumerator *= 2;
+        giniLeftHandDenominator *= array.length;
 
-        double giniLeftHand = giniNumerator / giniDenominator; // left hand of the final subtraction in gini index.
-        Double giniIndex = giniLeftHand - ((1 + array.length) / array.length); // left hand minus right hand of the gini index calculation. cast as object to use isNaN.
-
-        if(giniIndex.isNaN()){ // avoids spitting out a NaN at first time step
+        double giniLeftHand = giniLeftHandNumerator / giniLeftHandDenominator;
+        Double giniIndex = giniLeftHand - ((1 + array.length) / array.length);
+        if(giniIndex.isNaN()){
             giniIndex = (double) 0;
         }
-        return new double[]{mean, giniIndex}; // return array with both mean and gini coef.
+        return new double[]{mean, giniIndex};
     }
 
+    /**
+     * Calculates the standard deviation of the values in an array of doubles. Uses Math.sqrt.
+     * @param array An array of doubles.
+     * @param mean The mean of the array supplied as double.
+     * @return The standard deviation of the array, as a double.
+     */
     private double calculateStandardDev(double[] array, double mean) {
-        // calculate standard deviation of an array of doubles. uses Math.sqrt().
-
-        double sumOfSquaredDevs = 0;
-        for (double aDouble : array) {
-            double squaredDev = aDouble - mean;
-            squaredDev *= squaredDev;
-            sumOfSquaredDevs += squaredDev;
+        double sumOfSquaredDeviations = 0;
+        for (double thisDouble : array) {
+            double deviation = thisDouble - mean;
+            double squaredDeviation = deviation * deviation;
+            sumOfSquaredDeviations += squaredDeviation;
         }
-        sumOfSquaredDevs /= array.length;
-        return Math.sqrt(sumOfSquaredDevs);
+        sumOfSquaredDeviations /= array.length;
+        return Math.sqrt(sumOfSquaredDeviations);
     }
 
+    /**
+     * Calculates the standard deviation of the values in an array of ints. Uses Math.sqrt.
+     * The difference with method for doubles is that this version casts values as doubles.
+     * @param array An array of integers.
+     * @param mean The mean of the array as a double.
+     * @return The standard deviation of the supplied array as a double.
+     */
     private double calculateStandardDev(int[] array, double mean) {
-        // calculate standard deviation of an array of ints. uses Math.sqrt() and casts ints as doubles before division.
-
-        double sumOfSquaredDevs = 0;
-        for (int anInt : array) {
-            double squaredDev = ((double) anInt) - mean;
-            squaredDev *= squaredDev;
-            sumOfSquaredDevs += squaredDev;
+        double sumSquaredDeviations = 0;
+        for (int thisInt : array) {
+            double deviation = ((double) thisInt) - mean;
+            double squaredDeviation = deviation * deviation;
+            sumSquaredDeviations += squaredDeviation;
         }
-        sumOfSquaredDevs /= array.length;
-        return Math.sqrt(sumOfSquaredDevs);
+        sumSquaredDeviations /= array.length;
+        return Math.sqrt(sumSquaredDeviations);
     }
 
-    public void resetGlobals(){ // set everything to 0 to calculate only globals at step time.
-        this.falseDiscoveries = 0; // total number of false discoveries
-        this.numberOfPublications = 0; // total number of publications
-        this.falseDiscoveryRate = 0; // the rate of publications that are false discoveries.
-        this.rateOfDiscovery = 0; // the proportion of topics that have been discovered (number of publications > 1).
-        this.discoveredMean = 0; // the mean baserate of each topic in the landscape.
-        this.discoveredStandardDev = 0;  // the standard deviation of the rates of the landscape.
-        this.discoveredDistribution = new double[0]; // all base rates of the landscape in array form.
-        this.publicationMean = 0; // the mean number of publications of each topic.
-        this.publicationStandardDev = 0; // the standard deviation of the publications of each topic.
-        this.publicationDistribution = new int[0]; // all values of publications in each topic in array form.
-        this.fundsMean = 0; // the mean total amount of funds (years of funding) of the labs.
-        this.fundsStandardDev = 0; // the standard deviation of the total amnount of funds of the labs.
-        this.fundsDistribution = new double[0]; // all values of total amount of funds in array form.
-        this.fundsGini = 0; // the gini index of the distribution of total amount of funds in the lab population.
-        this.postdocNumberMean = 0; // mean number of postdocs of every lab (total amount of grants)
-        this.postdocNumberStandardDev = 0; // standard deviation of the number of postdocs.
-        this.postdocNumberGini = 0; // gini index of the distribution of number of postdocs.
-        this.postdocNumberDistribution = new double[0]; // all values of number of postdocs, in array form.
-        this.postdocDurationMean = 0; // the mean amount of cycles that the lab will have at least one postdoc ( 0 to 5).
-        this.postdocDurationDistribution = new double[0]; // the distribution of amount of cycles that labs will have at least one postdoc.
-        this.postdocDurationStandardDev = 0; // the standard deviation of the amount of cycles that labs will have at least one postdoc.
-        this.postdocDurationGini = 0; // the gini index of the distribution of the amount of cycles that labs will have at least one postdoc.
+    /**
+     * Sets every measure field at 0 to measure again at this step time. Is called by ScienceMaster in step() method.
+     */
+    public void resetGlobals(){
+        this.falseDiscoveriesLastWindow = 0;
+        this.numberOfPublicationsLastWindow = 0;
+        this.falseDiscoveryRateLastWindow = 0;
+        this.proportionOfTopicsExplored = 0;
+        this.meanBaseRate = 0;
+        this.baseRateSDev = 0;
+        this.baseRateDistribution = new double[0];
+        this.meanPublicationsPerTopic = 0;
+        this.publicationsPerTopicSDev = 0;
+        this.publicationsPerTopicDistribution = new int[0];
+        this.meanTotalFundsLastWindow = 0;
+        this.totalFundsSDev = 0;
+        this.totalFundsDistribution = new double[0];
+        this.totalFundsGiniLastWindow = 0;
+        this.postdocNumberMeanLastWindow = 0;
+        this.postdocNumberSDev = 0;
+        this.postdocNumberGiniLastWindow = 0;
+        this.postdocNumberDistribution = new double[0];
     }
 
-    private double aggregateGlobal(DoubleBag bag, double aggregation){
-        while(bag.size() > aggregation){ // prune it down to the max number requested
-            bag.removeNondestructively(0);
+    /**
+     * Aggregates the values in a bag of doubles by averaging them.
+     * Before aggregating, it prunes the bag non-destructively until the number of items in the bag
+     * matches the number of items requested.
+     * @param bagOfMeasures A bag of doubles with values to aggregate.
+     * @param aggregationWindow The number of last steps that should be aggregated
+     * @return The average of the values of the bag after pruning to desired length as a double.
+     */
+    private double aggregateGlobal(DoubleBag bagOfMeasures, double aggregationWindow){
+        if (bagOfMeasures.size() > this.aggregationWindow) {
+            bagOfMeasures.removeNondestructively(0);
         }
-        double result = 0;
-        for(int i = 0 ; i < bag.size(); i++){
-            result += bag.get(i);
+        double aggregatedMeasure = 0;
+        for(int i = 0 ; i < bagOfMeasures.size(); i++){
+            aggregatedMeasure += bagOfMeasures.get(i);
         }
-        result /= aggregation;
-        return result;
+        aggregatedMeasure /= aggregationWindow;
+        return aggregatedMeasure;
     }
 
-    // getters and setters //
-
-
-    public void addFalseDiscoveries() {
-        this.falseDiscoveries++;
-    }
-
+    /**
+     * Adds 1 to the total number of publications for this turn.
+     */
     public void addPublications() {
-        this.numberOfPublications++;
+        this.numberOfPublicationsLastWindow++;
     }
 
-    public double getFalseDiscoveryRate() {
-        return falseDiscoveryRate;
+    /**
+     * Adds 1 to the total number of false discoveries of this turn.
+     */
+    public void addFalseDiscoveries() {
+        this.falseDiscoveriesLastWindow++;
     }
 
-    public double getRateOfDiscovery() {
-        return rateOfDiscovery;
+
+    //region Getters
+
+    public double getFalseDiscoveryRateLastWindow() {
+        return falseDiscoveryRateLastWindow;
     }
 
-    public double getDiscoveredMean() {
-        return discoveredMean;
+    public double getProportionOfTopicsExplored() {
+        return proportionOfTopicsExplored;
     }
 
-    public double getDiscoveredStandardDev() {
-        return discoveredStandardDev;
+    public double getMeanBaseRate() {
+        return meanBaseRate;
     }
 
-    public double[] getDiscoveredDistribution() {
-        return discoveredDistribution;
+    public double getBaseRateSDev() {
+        return baseRateSDev;
     }
 
-    public double getPublicationMean() {
-        return publicationMean;
+    public double[] getBaseRateDistribution() {
+        return baseRateDistribution;
     }
 
-    public double getPublicationStandardDev() {
-        return publicationStandardDev;
+    public double getMeanPublicationsPerTopic() {
+        return meanPublicationsPerTopic;
     }
 
-    public int[] getPublicationDistribution() {
-        return publicationDistribution;
+    public double getPublicationsPerTopicSDev() {
+        return publicationsPerTopicSDev;
     }
 
-    public double getFundsMean() {
-        return fundsMean;
+    public int[] getPublicationsPerTopicDistribution() {
+        return publicationsPerTopicDistribution;
     }
 
-    public double getFundsStandardDev() {
-        return fundsStandardDev;
+    public double getMeanTotalFundsLastWindow() {
+        return meanTotalFundsLastWindow;
     }
 
-    public double[] getFundsDistribution() {
-        return fundsDistribution;
+    public double getTotalFundsSDev() {
+        return totalFundsSDev;
     }
 
-    public double getFundsGini() {
-        return fundsGini;
+    public double[] getTotalFundsDistribution() {
+        return totalFundsDistribution;
     }
 
-    public double getPostdocNumberMean() {
-        return postdocNumberMean;
+    public double getTotalFundsGiniLastWindow() {
+        return totalFundsGiniLastWindow;
     }
 
-    public double getPostdocNumberStandardDev() {
-        return postdocNumberStandardDev;
+    public double getPostdocNumberMeanLastWindow() {
+        return postdocNumberMeanLastWindow;
     }
 
-    public double getPostdocNumberGini() {
-        return postdocNumberGini;
+    public double getPostdocNumberSDev() {
+        return postdocNumberSDev;
+    }
+
+    public double getPostdocNumberGiniLastWindow() {
+        return postdocNumberGiniLastWindow;
     }
 
     public double[] getPostdocNumberDistribution() {
         return postdocNumberDistribution;
     }
-
-    public double getPostdocDurationMean() {
-        return postdocDurationMean;
-    }
-
-    public double[] getPostdocDurationDistribution() {
-        return postdocDurationDistribution;
-    }
-
-    public double getPostdocDurationStandardDev() {
-        return postdocDurationStandardDev;
-    }
-
-    public double getPostdocDurationGini() {
-        return postdocDurationGini;
-    }
-
-    // debugging //
-
-
-    public double getAverageEffort() {
-        return averageEffort;
-    }
+    //endregion
 }

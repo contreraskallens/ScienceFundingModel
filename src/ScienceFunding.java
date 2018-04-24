@@ -7,19 +7,11 @@ import sim.util.Double2D;
 
 public class ScienceFunding extends SimState {
 
-    //region Parameters and Objects
-    private Bag bagOfAllLabs;
-    private int latestIdAssigned;
-    private Agency agencyObject;
-    private ScienceMaster scienceMasterObject;
-    private Globals globalsObject;
-
     private final int sizeOfLandscape = 200;
     private final int numberOfLabs = 100;
     private final double initialBaseRate = 0.1;
     private final int numberOfEstablishedTopics = 0;
     private final int frequencyOfGlobalsSchedule = 100;
-
     private final double initialEffort = 75;
     private final double powerLevel = 0.8;
     private final double costOfEffortConstant = 0.2;
@@ -27,18 +19,21 @@ public class ScienceFunding extends SimState {
     private final double probabilityOfPublishingNegative = 0.5;
     private final double increaseInBaseRate = 0;
     private final double effectivenessOfPeerReviewers = 0.2;
-
     private final double probabilityOfPostdocAtStart = 0.05;
     private final double costOfApplyingForFunding = 0.2;
     private final double probabilityOfApplyingForFunding = 1;
     private final double weightOfInnovationInFunding = 0;
     private final double weightOfPrestigeInFunding = 1;
     private final boolean lotteryOfFunding = false;
-
     private final double probabilityOfEffortMutation = 0.1;
     private final double standardDeviationOfEffortMutation = 10;
     private final int maximumTopicMutationDistance = 2;
-
+    //region Parameters and Objects
+    private Bag bagOfAllLabs;
+    private int latestIdAssigned;
+    private Agency agencyObject;
+    private ScienceMaster scienceMasterObject;
+    private Globals globalsObject;
     private DoubleGrid2D epistemicLandscape = new DoubleGrid2D(sizeOfLandscape, sizeOfLandscape, initialBaseRate);
     private SparseGrid2D locationOfLaboratories = new SparseGrid2D(sizeOfLandscape, sizeOfLandscape);
     private IntGrid2D publicationRecordOfTopics = new IntGrid2D(sizeOfLandscape, sizeOfLandscape, 0);
@@ -54,6 +49,20 @@ public class ScienceFunding extends SimState {
     }
 
     //region Methods
+
+    /**
+     * Main method loops the schedule class as per Mason manual.
+     *
+     * @param args various arguments to control execution flow, like -for N, -parallel P, -repeat R.
+     *             Full list in Mason manual, pg. 91
+     */
+    public static void main(String[] args) {
+        {
+            doLoop(ScienceFunding.class, args);
+            System.exit(0);
+        }
+    }
+
     /**
      * Start the simulation by clearing grids, allocating the established topics,
      * creating labs and assigning them to a topic, and scheduling the objects.
@@ -139,19 +148,6 @@ public class ScienceFunding extends SimState {
     }
 
     /**
-     * Main method loops the schedule class as per Mason manual.
-     *
-     * @param args various arguments to control execution flow, like -for N, -parallel P, -repeat R.
-     *             Full list in Mason manual, pg. 91
-     */
-    public static void main(String[] args) {
-        {
-            doLoop(ScienceFunding.class, args);
-            System.exit(0);
-        }
-    }
-
-    /**
      * Increase the id number for future lab creation.
      * This function is called by scienceMaster when creating a new lab.
      */
@@ -161,6 +157,7 @@ public class ScienceFunding extends SimState {
     //endregion
 
     //region Getters
+
     /**
      * The first set of getters are used by other objects to access parameters of the simulation and
      * and objects that have been scheduled.
@@ -266,55 +263,55 @@ public class ScienceFunding extends SimState {
      */
 
     public double getFalseDiscoveryRate() {
-        return this.globalsObject.getFalseDiscoveryRate();
+        return this.globalsObject.getFalseDiscoveryRateLastWindow();
     }
 
     public double getRateOfDiscoveries() {
-        return this.globalsObject.getRateOfDiscovery();
+        return this.globalsObject.getProportionOfTopicsExplored();
     }
 
     public double getDiscoveredMean() {
-        return this.globalsObject.getDiscoveredMean();
+        return this.globalsObject.getMeanBaseRate();
     }
 
     public double[] getDiscoveredDistribution() {
-        return this.globalsObject.getDiscoveredDistribution();
+        return this.globalsObject.getBaseRateDistribution();
     }
 
     public double getDiscoveredStandardDev() {
-        return this.globalsObject.getDiscoveredStandardDev();
+        return this.globalsObject.getBaseRateSDev();
     }
 
     public double getPublicationMean() {
-        return this.globalsObject.getPublicationMean();
+        return this.globalsObject.getMeanPublicationsPerTopic();
     }
 
     public int[] getPublicationDistribution() {
-        return this.globalsObject.getPublicationDistribution();
+        return this.globalsObject.getPublicationsPerTopicDistribution();
     }
 
     public double getPublicationStandardDev() {
-        return this.globalsObject.getPublicationStandardDev();
+        return this.globalsObject.getPublicationsPerTopicSDev();
     }
 
     public double getFundsMean() {
-        return this.globalsObject.getFundsMean();
+        return this.globalsObject.getMeanTotalFundsLastWindow();
     }
 
     public double getFundStandardDev() {
-        return this.globalsObject.getFundsStandardDev();
+        return this.globalsObject.getTotalFundsSDev();
     }
 
     public double[] getFundsDistribution() {
-        return this.globalsObject.getFundsDistribution();
+        return this.globalsObject.getTotalFundsDistribution();
     }
 
     public double getFundsGini() {
-        return this.globalsObject.getFundsGini();
+        return this.globalsObject.getTotalFundsGiniLastWindow();
     }
 
     public double getPostdocNumberMean() {
-        return this.globalsObject.getPostdocNumberMean();
+        return this.globalsObject.getPostdocNumberMeanLastWindow();
     }
 
     public double[] getPostdocNumberDistribution() {
@@ -322,27 +319,10 @@ public class ScienceFunding extends SimState {
     }
 
     public double getPostdocNumberGini() {
-        return this.globalsObject.getPostdocNumberGini();
+        return this.globalsObject.getPostdocNumberGiniLastWindow();
     }
 
     public double getPostdocNumberStandardDev() {
-        return this.globalsObject.getPostdocNumberStandardDev();
+        return this.globalsObject.getPostdocNumberSDev();
     }
-
-    public double getPostdocDurationMean() {
-        return this.globalsObject.getPostdocDurationMean();
-    }
-
-    public double[] getPostdocDurationDistribution() {
-        return this.globalsObject.getPostdocDurationDistribution();
-    }
-
-    public double getPostdocDurationStandardDev() {
-        return this.globalsObject.getPostdocDurationStandardDev();
-    }
-
-    public double getPostdocDurationGini() {
-        return this.globalsObject.getPostdocDurationGini();
-    }
-    //endregion
 }

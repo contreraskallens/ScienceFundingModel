@@ -1,73 +1,94 @@
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
-
+/**
+ * This class accesses the measures stored in the fields of the Globals agent and
+ * writes them to a file in the order specified in the method. This happens everytime it is constructed.
+ * NOT a steppable.
+ */
 public class Outputter {
 
-    /**
-     * Field to save the file name to be recorded. useful for batch runs.
-     */
     private String fileName;
 
     /**
+     * Every time Outputter is constructed, it outputs the data contained in Globals to the file recorded in fileName.
+     * This way of saving them avoids having to have Outputter as an additional agent in the schedule.
+     * Outputter is only constructed by Globals.
+     * Before writing the globals to the file, the Outputter creates the files with the column headers to be written.
+     * After this, it only writes values under these columns. Order of columns and of values being written have to match.
+     * The file is stored in the project folder under /resources. It uses the job id of MASON to as an identifier.
+     * Default filename is runID.csv (e.g. run04.csv).
      *
-     * @param state hey
-     * @throws IOException hey
+     * @param state The simulation state cast as ScienceFunding.
+     * @throws IOException Exception needed by the package being used.
      */
     public Outputter(ScienceFunding state) throws IOException {
-
-        // every time Outputter is constructed, it outputs the data contained in Globals to the file recorded in fileName.
-        // this method avoids having to have Outputter as an additional agent in the schedule. Outputter is only constructed by Globals.
-        // at time step 0, when the outputter is called once by the simulation, it writes down the columns by using prepareFile();
-        // every time it's constructed after that, it writes all of the global statistics to the file in the order provided.
-        // the output file is a .csv.
-
-        fileName = "resources" + System.getProperty("file.separator") + "run" + state.job() + ".csv"; // file name is directory/resources/runX.csv. X is determined by ScienceFunding.runNumber.
-
-
-        BufferedWriter pw = null; // allocate the file writer. open file in append mode.
+        fileName = "resources" + System.getProperty("file.separator") + "run" + state.job() + ".csv";
+        BufferedWriter fileWriter = null;
         try {
-            pw = new BufferedWriter(new FileWriter(fileName, true));
-        } catch (IOException e) {
-            e.printStackTrace();
+            fileWriter = new BufferedWriter(new FileWriter(fileName, true));
+        } catch (IOException exception) {
+            exception.printStackTrace();
         }
-        if(state.schedule.getSteps() == 0){
+        if (state.schedule.getSteps() == 0) {
             prepareFile();
         }
-        writeGlobals(pw, state);
-        closeFile(pw);
-
+        writeGlobals(fileWriter, state);
+        closeFile(fileWriter);
     }
 
+    /**
+     * Creates a file with filename stored in the field fileName writes column headers
+     * specified below separated by commas.
+     * This happens only when the time in simulation space is 0.
+     * After writing the headers, writes a line break and flushes the buffer of the filewriter.
+     *
+     * @throws IOException Exception needed by the package being used.
+     */
     private void prepareFile() throws IOException {
-        // at time step 0, when Outputter is first allocated, prepare file by writing the column names for subsequent import
-         BufferedWriter pw = new BufferedWriter(new FileWriter(this.fileName));
-         pw.write("stepNumber," + "falseDiscoveryRate," + "rateOfDiscovery," +
+        BufferedWriter fileWriter = new BufferedWriter(new FileWriter(this.fileName));
+        fileWriter.write("stepNumber," + "falseDiscoveryRate," + "rateOfDiscovery," +
                 "discoveredMean," + "discoveredStandardDev," + "publicationMean," + "publicationStandardDev," +
                 "fundsMean," + "fundsStandardDev," + "fundsGini," + "postdocNumberMean," + "postdocNumberStandardDev," +
-                "postdocNumberGini," + "postdocDurationMean," + "postdocDurationStandardDev," + "postdocDurationGini");
-         pw.newLine();
-         pw.flush();
+                "postdocNumberGini");
+        fileWriter.newLine();
+        fileWriter.flush();
     }
 
-    private void writeGlobals(BufferedWriter pw, ScienceFunding state) throws IOException {
-        // writes all of the data saved to Globals, and then writes a new line.
-        Globals theGlobals = state.getGlobalsObject(); // point to globals to get the measures
+    /**
+     * Writes the global measures to a file created by prepareFile() with file name stored in field fileName.
+     * The VALUES of the global measures are obtained from the Globals object scheduled in the simulation state.
+     * The order of the values being written has to be matched to the order of the column headers in prepareFile().
+     * Before the measures, the current time step is written.
+     * After writing the measures in this order, separated by commas, it inserts a line break.
+     *
+     * @param fileWriter A bufferedWriter object.
+     * @param state      The Simulation state, casted as ScienceFunding.
+     * @throws IOException Exception needed by the package being used.
+     */
+    private void writeGlobals(BufferedWriter fileWriter, ScienceFunding state) throws IOException {
+        Globals globalsObject = state.getGlobalsObject();
 
-        pw.write(state.schedule.getSteps() + "," + theGlobals.getFalseDiscoveryRate() + "," + theGlobals.getRateOfDiscovery() + "," +
-                theGlobals.getDiscoveredMean() + "," + theGlobals.getDiscoveredStandardDev() +
-                "," + theGlobals.getPublicationMean() + "," + theGlobals.getPublicationStandardDev() + "," + theGlobals.getFundsMean() + "," +
-                theGlobals.getFundsStandardDev() + "," + theGlobals.getFundsGini() + "," + theGlobals.getPostdocNumberMean() +  "," +
-                theGlobals.getPostdocNumberStandardDev() + "," + theGlobals.getPostdocNumberGini() +  "," + theGlobals.getPostdocDurationMean() + "," + theGlobals.getPostdocDurationStandardDev() +
-                "," + theGlobals.getPostdocDurationGini());
-        pw.newLine();
-        pw.flush();
+        fileWriter.write(state.schedule.getSteps() + "," + globalsObject.getFalseDiscoveryRateLastWindow() + "," + globalsObject.getProportionOfTopicsExplored() + "," +
+                globalsObject.getMeanBaseRate() + "," + globalsObject.getBaseRateSDev() +
+                "," + globalsObject.getMeanPublicationsPerTopic() + "," + globalsObject.getPublicationsPerTopicSDev() + "," + globalsObject.getMeanTotalFundsLastWindow() + "," +
+                globalsObject.getTotalFundsSDev() + "," + globalsObject.getTotalFundsGiniLastWindow() + "," + globalsObject.getPostdocNumberMeanLastWindow() + "," +
+                globalsObject.getPostdocNumberSDev() + "," + globalsObject.getPostdocNumberGiniLastWindow());
+        fileWriter.newLine();
+        fileWriter.flush();
     }
 
-    private void closeFile(BufferedWriter pw) throws IOException {
-        // flushes the file writer, and then closes the file. this happens after writing the data to it.
+    /**
+     * Flushes the file writer, and then closes the file.
+     * This happens after writing the data to it.
+     *
+     * @param fileWriter A BufferedWriter to write the data to the file.
+     * @throws IOException Exception needed by the package being used.
+     */
+    private void closeFile(BufferedWriter fileWriter) throws IOException {
 
-        pw.flush();
-        pw.close();
+        fileWriter.flush();
+        fileWriter.close();
     }
-
 }

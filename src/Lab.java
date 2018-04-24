@@ -17,17 +17,16 @@ import sim.util.IntBag;
  * Stoppable stores the switch to kill them from the simulation when dying.
  */
 class Lab implements Steppable {
-    private int age;
     private final int labId;
     double effort;
     double prestige;
-    private double scoreForApplying;
     int xLocationInLandscape;
     int yLocationInLandscape;
     IntBag grants;
     int numberOfPostdocs;
     Stoppable stoppable;
-
+    private int age;
+    private double scoreForApplying;
     private double probabilityOfMoving = 0.5; // the probability of changing location to a nearby topic each given cycle.
     private double probabilityOfRandomMove = 0.1; // the probability that, in the case of changing location, it will be to a random one.
     private double innovativenessOfTopic;
@@ -36,7 +35,8 @@ class Lab implements Steppable {
     /**
      * Creates lab in a specified location of landscape and with a specified unique identifier.
      * Other attributes initialized as 0.
-     * @param labId Unique identifier for the lab
+     *
+     * @param labId                Unique identifier for the lab
      * @param xLocationInLandscape X dimension of the location of the lab in the epistemic landscape
      * @param yLocationInLandscape Y dimension of the location of the lab in the epistemic landscape.
      */
@@ -53,10 +53,11 @@ class Lab implements Steppable {
     /**
      * Each step, lab grows a cycle older, has a probability of changing topic determined by model parameters,
      * does research, applies for funding, and publishes results, then updates the funding.
+     *
      * @param state The simulation state.
      */
     @Override
-    public void step(SimState state){
+    public void step(SimState state) {
         ScienceFunding simulation = (ScienceFunding) state;
         age++;
         if (simulation.schedule.getSteps() != 0) {
@@ -88,7 +89,7 @@ class Lab implements Steppable {
     /**
      * For each active grant (> 0 years left), add a postdoc for this year.
      */
-    private void checkFunding(){
+    private void checkFunding() {
         this.numberOfPostdocs = grants.size(); // for each active grant, add a postdoc for this year. this function is called after grants with 0 years remaining were cleaned.
     }
 
@@ -96,10 +97,11 @@ class Lab implements Steppable {
      * Changes the lab topic with some probability. At this point, this is a random walk.
      * There are two parameters that control this method: the probability of moving at all, probabilityOfMoving,
      * and the probability that instead of doing a random walk around the current location, lab will move to a random topic.
-     * @param state The simulation state.
+     *
+     * @param state              The simulation state.
      * @param epistemicLandscape The epistemic landscape where labs are situated.
      */
-    private void updateTopic(ScienceFunding state, SparseGrid2D epistemicLandscape){
+    private void updateTopic(ScienceFunding state, SparseGrid2D epistemicLandscape) {
 
         if (state.random.nextDouble() < probabilityOfMoving) {
             if (state.random.nextDouble() < this.probabilityOfRandomMove) {
@@ -136,23 +138,24 @@ class Lab implements Steppable {
     /**
      * First, labs apply for funding by calling function applyToGrant.
      * Each member of the lab (PI + postdocs) attempts to do research this turn with a probability.
-     * @param state The simulation state
-     * @param publicationSpace The grid that stores the publications per topic
+     *
+     * @param state              The simulation state
+     * @param publicationSpace   The grid that stores the publications per topic
      * @param epistemicLandscape The epistemic landscape grid.
      */
     private void doResearch(ScienceFunding state, IntGrid2D publicationSpace, DoubleGrid2D epistemicLandscape) {
 
         boolean appliedToGrant = applyToGrant(state, epistemicLandscape);
         int numberOfResearchers = 1 + this.numberOfPostdocs;
-        for(int i = 0; i < numberOfResearchers; i++) {
+        for (int i = 0; i < numberOfResearchers; i++) {
 
             /*
              The probability of doing research for each member of the lab is modified by its effort level.
              The amount that effort hinders productivity is specified in parameter ScienceFunding.costOfEffortConstant.
              If the lab applied for funding, the productivity of the PI (i = 0) is also affected by parameter ScienceFunding.costOfApplyingForFunding.
              */
-            double  probabilityOfResearch = 1 - (state.getCostOfEffortConstant() * Math.log10(effort));
-            if(appliedToGrant && i == 0) {
+            double probabilityOfResearch = 1 - (state.getCostOfEffortConstant() * Math.log10(effort));
+            if (appliedToGrant && i == 0) {
                 probabilityOfResearch = probabilityOfResearch * state.getCostOfApplyingForFunding();
             }
             if (state.random.nextDouble() < probabilityOfResearch) {
@@ -220,9 +223,7 @@ class Lab implements Steppable {
                  the publication is rejected/
                   */
                 if (!labIsRight && (state.random.nextDouble() < state.getEffectivenessOfPeerReviewers())) {
-                }
-
-                else {
+                } else {
                     if (publishingPositiveEffect) {
 
                         /*
@@ -269,7 +270,8 @@ class Lab implements Steppable {
      * When applying to funding, lab calculates its score for the process based on the parameters set in ScienceFunding,
      * weightOfInnovationInFunding and weightOfPrestigeInFunding. See model description for the difference in both.
      * After calculating its score, the lab adds itself to the funding agency's list of applicant with a probability.
-     * @param state The Simulation State casted as ScienceFunding
+     *
+     * @param state              The Simulation State casted as ScienceFunding
      * @param epistemicLandscape The epistemic landscape grid
      * @return A boolean value. True if the lab applied for funding, false if it didn't.
      */
@@ -305,45 +307,46 @@ class Lab implements Steppable {
         }
     }
 
-    /**
-     * This setter is used when including error in the funding agency's ranking of scores.
-     * @param newScore The new value for this lab's score.
-     */
-    public void setScoreForApplying(double newScore){
-        scoreForApplying = newScore;
-    }
-
-    //region Getters
-
     public double getScoreForApplying() {
         return scoreForApplying;
     }
 
-    public double getPrestige(){
+    //region Getters
+
+    /**
+     * This setter is used when including error in the funding agency's ranking of scores.
+     *
+     * @param newScore The new value for this lab's score.
+     */
+    public void setScoreForApplying(double newScore) {
+        scoreForApplying = newScore;
+    }
+
+    public double getPrestige() {
         return prestige;
     }
 
-    public int getNumberOfPostdocs(){
+    public int getNumberOfPostdocs() {
         return numberOfPostdocs;
     }
 
-    public int getAge(){
+    public int getAge() {
         return age;
     }
 
-    public int getLabId(){
+    public int getLabId() {
         return labId;
     }
 
-    public Double2D getLocation(){
+    public Double2D getLocation() {
         return new Double2D(xLocationInLandscape, yLocationInLandscape);
     }
 
-    public int[] getGrants(){
+    public int[] getGrants() {
         return grants.toArray();
     }
 
-    public double getInnovativenessOfTopic(){
+    public double getInnovativenessOfTopic() {
         return innovativenessOfTopic;
     }
 

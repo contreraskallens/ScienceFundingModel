@@ -27,7 +27,6 @@ public class ScienceFundingWithUI extends GUIState {
     public TimeSeriesAttributes falseDiscoveryRateAttributes;
     public TimeSeriesAttributes fundsGiniAttributes;
     public TimeSeriesAttributes postdocNumberGiniAttributes;
-    public TimeSeriesAttributes postdocDurationGiniAttributes;
 
     public HistogramGenerator fundsHistogram;
     public HistogramSeriesAttributes fundsDistributionAttributes;
@@ -111,7 +110,6 @@ public class ScienceFundingWithUI extends GUIState {
         ChartUtilities.scheduleSeries(this, falseDiscoveryRateAttributes, () -> ((ScienceFunding) state).getFalseDiscoveryRate());
         ChartUtilities.scheduleSeries(this, fundsGiniAttributes, () -> ((ScienceFunding) state).getFundsGini());
         ChartUtilities.scheduleSeries(this, postdocNumberGiniAttributes, () -> ((ScienceFunding) state).getPostdocNumberGini());
-        ChartUtilities.scheduleSeries(this, postdocDurationGiniAttributes, () -> ((ScienceFunding) state).getPostdocDurationGini());
         ChartUtilities.scheduleSeries(this, fundsDistributionAttributes, () -> ((ScienceFunding) state).getFundsDistribution());
         ChartUtilities.scheduleSeries(this, postdocNumberDistributionAttributes, () -> ((ScienceFunding) state).getPostdocNumberDistribution());
         ChartUtilities.scheduleSeries(this, discoveredMeanAttributes, () -> ((ScienceFunding) state).getDiscoveredMean());
@@ -132,7 +130,6 @@ public class ScienceFundingWithUI extends GUIState {
         ChartUtilities.scheduleSeries(this, falseDiscoveryRateAttributes, ((ScienceFunding) state)::getDiscoveredMean);
         ChartUtilities.scheduleSeries(this, fundsGiniAttributes, ((ScienceFunding) state)::getFundsGini);
         ChartUtilities.scheduleSeries(this, postdocNumberGiniAttributes, ((ScienceFunding) state)::getPostdocNumberGini);
-        ChartUtilities.scheduleSeries(this, postdocDurationGiniAttributes, ((ScienceFunding) state)::getPostdocDurationGini);
         ChartUtilities.scheduleSeries(this, fundsDistributionAttributes, ((ScienceFunding) state)::getFundsDistribution);
         ChartUtilities.scheduleSeries(this, postdocNumberDistributionAttributes, ((ScienceFunding) state)::getPostdocNumberDistribution);
         ChartUtilities.scheduleSeries(this, discoveredMeanAttributes, ((ScienceFunding) state)::getDiscoveredMean);
@@ -191,7 +188,6 @@ public class ScienceFundingWithUI extends GUIState {
         fundsGiniAttributes = ChartUtilities.addSeries(timeSeriesChart, "Funds Gini");
         falseDiscoveryRateAttributes = ChartUtilities.addSeries(timeSeriesChart, "False Discovery Rate");
         postdocNumberGiniAttributes = ChartUtilities.addSeries(timeSeriesChart, "Number of Postdocs Gini");
-        postdocDurationGiniAttributes = ChartUtilities.addSeries(timeSeriesChart, "Duration of Postdocs Gini");
 
         fundsHistogram = ChartUtilities.buildHistogramGenerator(this, "Distribution of Funds", "Number of Labs");
         fundsDistributionAttributes = ChartUtilities.addSeries(fundsHistogram, "Total funds (sum)", 5);

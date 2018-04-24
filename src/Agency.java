@@ -4,9 +4,6 @@ import sim.util.Bag;
 import java.util.Comparator;
 
 class Agency implements Steppable {
-
-    // fields //
-
     private Bag thisTurnsApplicants; // renewable bag to store everyone applying for funds. labs insert themselves into the bag during their steps.
 
     // parameters //
